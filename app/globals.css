@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: var(--font-hind-siliguri), 'Hind Siliguri', -apple-system, BlinkMacSystemFont,
+      'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #FAF7FF;
+  }
+
+  * {
+    scroll-behavior: smooth;
+  }
+}
