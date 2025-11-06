@@ -1,46 +1,53 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import HomeContent from '@/components/home/HomeContent';
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Hero from "@/components/Hero";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import HomeContent from "@/components/home/HomeContent";
+import type { HeroContent } from "@/lib/site-content";
 
-export default function HomePageClient() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const searchParamValue = searchParams.get('search') ?? '';
-  const [searchQuery, setSearchQuery] = useState(searchParamValue);
+interface HomePageClientProps {
+    heroContent: HeroContent;
+}
 
-  useEffect(() => {
-    setSearchQuery(searchParamValue);
-  }, [searchParamValue]);
+export default function HomePageClient({ heroContent }: HomePageClientProps) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const searchParamValue = searchParams.get("search") ?? "";
+    const [searchQuery, setSearchQuery] = useState(searchParamValue);
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    const nextPath = query ? `/?search=${encodeURIComponent(query)}` : '/';
-    router.replace(nextPath, { scroll: false });
-  };
+    useEffect(() => {
+        setSearchQuery(searchParamValue);
+    }, [searchParamValue]);
 
-  const handleBookClick = (bookId: string) => {
-    router.push(`/books/${bookId}`);
-  };
+    const handleSearch = (query: string) => {
+        setSearchQuery(query);
+        const nextPath = query ? `/?search=${encodeURIComponent(query)}` : "/";
+        router.replace(nextPath, { scroll: false });
+    };
 
-  const handleAdminNavigate = () => {
-    router.push('/admin/login');
-  };
+    const handleBookClick = (bookId: string) => {
+        router.push(`/books/${bookId}`);
+    };
 
-  return (
-    <>
-      <Header
-        initialSearchQuery={searchQuery}
-        onSearch={handleSearch}
-        onAdminClick={handleAdminNavigate}
-      />
-      <main>
-        <HomeContent onBookClick={handleBookClick} searchQuery={searchQuery} />
-      </main>
-      <Footer />
-    </>
-  );
+    const handleAdminNavigate = () => {
+        router.push("/admin/login");
+    };
+
+    return (
+        <>
+            <Header
+                initialSearchQuery={searchQuery}
+                onSearch={handleSearch}
+                onAdminClick={handleAdminNavigate}
+            />
+            <main>
+                <Hero {...heroContent} />
+                <HomeContent onBookClick={handleBookClick} searchQuery={searchQuery} />
+            </main>
+            <Footer />
+        </>
+    );
 }

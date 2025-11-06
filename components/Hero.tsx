@@ -1,22 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-import { fetchSiteSettings } from "@/lib/api";
 import Link from "next/link";
-
-interface HighlightItem {
-    author: string;
-    label: string;
-}
-
-const DEFAULT_HIGHLIGHTS: HighlightItem[] = [
-    { author: "James Clear", label: "জেমস ক্লিয়ারের সর্বশেষ লেখা" },
-    { author: "Newsletter Vol", label: "নিউজলেটার সংস্করণের নতুনতম দিশা" },
-    { author: "Robert Kiyosaki", label: "রবার্ট কিয়োসাকির সর্বশেষ ভাবনা" },
-    { author: "Brian Tracy", label: "ব্রায়ান ট্রেসির নতুন অনুপ্রেরণা" },
-];
+import type { HeroContent, HeroHighlight } from "@/lib/site-content";
 
 const HERO_IMAGES = [
     "https://images.pexels.com/photos/5632402/pexels-photo-5632402.jpeg",
@@ -24,64 +11,15 @@ const HERO_IMAGES = [
     "https://images.pexels.com/photos/7504825/pexels-photo-7504825.jpeg",
 ];
 
-export default function Hero() {
-    const [title, setTitle] = useState("");
-    const [subtitle, setSubtitle] = useState("");
-    const [buttonLabel, setButtonLabel] = useState("");
-    const [highlights, setHighlights] =
-        useState<HighlightItem[]>(DEFAULT_HIGHLIGHTS);
+interface HeroProps extends HeroContent {}
 
-    useEffect(() => {
-        let isMounted = true;
-        (async () => {
-            try {
-                const response = await fetchSiteSettings([
-                    "hero_title",
-                    "hero_subtitle",
-                    "hero_button_label",
-                    "hero_highlights",
-                ]);
-                if (!isMounted) return;
-
-                const data = response.data;
-                if (data.hero_title) {
-                    setTitle(data.hero_title);
-                }
-                if (data.hero_subtitle) {
-                    setSubtitle(data.hero_subtitle);
-                }
-                if (data.hero_button_label) {
-                    setButtonLabel(data.hero_button_label);
-                }
-                if (data.hero_highlights) {
-                    try {
-                        const parsed = JSON.parse(
-                            data.hero_highlights
-                        ) as HighlightItem[];
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                            setHighlights(parsed);
-                        }
-                    } catch (error) {
-                        console.warn(
-                            "Failed to parse hero_highlights setting",
-                            error
-                        );
-                    }
-                }
-            } catch (error) {
-                console.error("Failed to load hero settings", error);
-            }
-        })();
-
-        return () => {
-            isMounted = false;
-        };
-    }, []);
-
-    const heroTitleLines = useMemo(
-        () => title.split("\n").map((line) => line.trim()),
-        [title]
-    );
+export default function Hero({
+    title,
+    subtitle,
+    buttonLabel,
+    highlights,
+}: HeroProps) {
+    const heroTitleLines = title.split("\n").map((line) => line.trim());
 
     return (
         <section className="bg-[#FAF7FF] py-16">

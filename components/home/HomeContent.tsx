@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import Hero from "../Hero";
 import BookSection from "../BookSection";
 import CategorySection from "../CategorySection";
 import Services from "../Services";
@@ -196,25 +195,41 @@ export default function HomeContent({
 
     return (
         <>
-            <Hero />
-
-            <BookSection
-                title={recentTitle}
-                books={recentBooks}
-                onBookClick={onBookClick}
-            />
+            {recommendedBooks.length > 0 && (
+                <BookSection
+                    title={recommendedTitle}
+                    books={recommendedBooks}
+                    onBookClick={onBookClick}
+                    filterType="recommended"
+                />
+            )}
+            {recentBooks.length > 0 && (
+                <BookSection
+                    title={recentTitle}
+                    books={recentBooks}
+                    onBookClick={onBookClick}
+                    filterType="recent"
+                />
+            )}
             <CategorySection />
 
-            <BookSection
-                title={bestsellerTitle}
-                books={bestsellerBooks}
-                onBookClick={onBookClick}
-            />
-            <BookSection
-                title={popularTitle}
-                books={popularBooks}
-                onBookClick={onBookClick}
-            />
+            {popularBooks.length > 0 && (
+                <BookSection
+                    title={popularTitle}
+                    books={popularBooks}
+                    onBookClick={onBookClick}
+                    filterType="popular"
+                />
+            )}
+
+            {bestsellerBooks.length > 0 && (
+                <BookSection
+                    title={bestsellerTitle}
+                    books={bestsellerBooks}
+                    onBookClick={onBookClick}
+                    filterType="bestseller"
+                />
+            )}
         </>
     );
 }
