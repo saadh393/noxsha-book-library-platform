@@ -1,4 +1,3 @@
-import { cache } from 'react';
 import { getCollection } from './db';
 import type { SiteSettingDocument } from './types';
 
@@ -65,7 +64,7 @@ function parseHighlights(value: string | null | undefined): HeroHighlight[] {
   return DEFAULT_HIGHLIGHTS;
 }
 
-export const getHeroContent = cache(async (): Promise<HeroContent> => {
+export async function getHeroContent(): Promise<HeroContent> {
   try {
     const collection = await getCollection<SiteSettingDocument>('site_settings');
     const records = await collection
@@ -85,4 +84,4 @@ export const getHeroContent = cache(async (): Promise<HeroContent> => {
   }
 
   return DEFAULT_HERO_CONTENT;
-});
+}
