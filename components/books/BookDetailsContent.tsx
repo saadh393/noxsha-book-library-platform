@@ -15,11 +15,19 @@ interface BookDetailsProps {
   bookId: string;
   onBack: () => void;
   onBookClick: (bookId: string) => void;
+  initialBook?: Book | null;
+  initialRelated?: Book[];
 }
 
-export default function BookDetails({ bookId, onBack, onBookClick }: BookDetailsProps) {
-  const [book, setBook] = useState<Book | null>(null);
-  const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
+export default function BookDetails({
+  bookId,
+  onBack,
+  onBookClick,
+  initialBook = null,
+  initialRelated = [],
+}: BookDetailsProps) {
+  const [book, setBook] = useState<Book | null>(initialBook);
+  const [relatedBooks, setRelatedBooks] = useState<Book[]>(initialRelated);
   const [selectedTab, setSelectedTab] = useState<TabKey>('description');
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const tabLabels: Record<TabKey, string> = {
@@ -29,19 +37,34 @@ export default function BookDetails({ bookId, onBack, onBookClick }: BookDetails
   };
 
   useEffect(() => {
-    fetchBook();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [bookId]);
+    let isMounted = true;
 
-  async function fetchBook() {
-    try {
-      const { book: bookData, related } = await fetchBookDetails(bookId);
-      setBook(bookData);
-      setRelatedBooks(related);
-    } catch (error) {
-      console.error('Failed to load book details', error);
+    async function fetchBookDetailsData() {
+      try {
+        const { book: bookData, related } = await fetchBookDetails(bookId);
+        if (!isMounted) return;
+        setBook(bookData);
+        setRelatedBooks(related);
+      } catch (error) {
+        console.error('Failed to load book details', error);
+      }
     }
-  }
+
+    if (initialBook && initialBook.id === bookId) {
+      setBook(initialBook);
+      setRelatedBooks(initialRelated);
+    } else {
+      setBook(null);
+      setRelatedBooks([]);
+    }
+
+    fetchBookDetailsData();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [bookId, initialBook?.id]);
 
   if (!book) {
     return (
