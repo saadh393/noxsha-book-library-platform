@@ -6,6 +6,7 @@ import * as LucideIcons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { fetchActiveSocialLinks, fetchSiteSettings } from "@/lib/api";
 import type { SocialLink } from "@/lib/types";
+import Image from "next/image";
 
 interface FooterLinkItem {
     label: string;
@@ -145,10 +146,7 @@ export default function Footer() {
                 })),
         [socialLinks]
     );
-    const contactSectionItems = useMemo(
-        () => [...normalizedContactLinks, ...socialLinkItems],
-        [normalizedContactLinks, socialLinkItems]
-    );
+    const contactSectionItems = normalizedContactLinks;
 
     return (
         <footer className="bg-[#FAF7FF] border-t border-[#884be3]/20 py-12">
@@ -160,7 +158,12 @@ export default function Footer() {
                         viewport={{ once: true }}
                     >
                         <h3 className="text-2xl font-serif text-[#884be3] mb-4 font-bold">
-                            {companyName}
+                            <Image
+                                src={"/logo.png"}
+                                height={80}
+                                width={100}
+                                alt="Noxsha"
+                            />
                         </h3>
                         <p className="text-[#6B4BA8] text-sm mb-4">
                             {description}
@@ -192,6 +195,7 @@ export default function Footer() {
 
                     {[
                         { title: "যোগাযোগ করুন", items: contactSectionItems },
+                        { title: "সোশাল লিঙ্ক", items: socialLinkItems },
                     ].map((section, index) => (
                         <motion.div
                             key={section.title}

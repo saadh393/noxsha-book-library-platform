@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Search, X, Lock } from "lucide-react";
@@ -27,16 +28,7 @@ export default function Header({
         "শিরোনাম বা লেখক অনুসারে বই খুঁজুন..."
     );
     const [adminTooltip, setAdminTooltip] = useState("অ্যাডমিন প্যানেল");
-    const [navItems, setNavItems] = useState<NavLink[]>([
-        { id: "default-1", label: "প্রথম পাতা", href: "/", display_order: 0 },
-        { id: "default-2", label: "ই-বুক", href: "#ebook", display_order: 1 },
-        {
-            id: "default-3",
-            label: "আমাদের সম্পর্কে",
-            href: "#about",
-            display_order: 2,
-        },
-    ]);
+    const [navItems, setNavItems] = useState<NavLink[]>([]);
 
     useEffect(() => {
         setSearchQuery(initialSearchQuery ?? "");
@@ -107,7 +99,12 @@ export default function Header({
                         whileTap={{ scale: 0.95 }}
                     >
                         <span className="text-2xl font-serif text-[#884be3] font-bold">
-                            {logoText}
+                            <Image
+                                src={"/logo.png"}
+                                height={80}
+                                width={100}
+                                alt="Noxsha"
+                            />
                         </span>
                     </MotionLink>
 
@@ -139,7 +136,7 @@ export default function Header({
                         >
                             <Search size={20} className="text-[#6B4BA8]" />
                         </motion.button>
-                        {onAdminClick && (
+                        {/* {onAdminClick && (
                             <motion.button
                                 onClick={onAdminClick}
                                 whileHover={{ scale: 1.1 }}
@@ -149,7 +146,7 @@ export default function Header({
                             >
                                 <Lock size={20} className="text-[#6B4BA8]" />
                             </motion.button>
-                        )}
+                        )} */}
                     </div>
                 </div>
 

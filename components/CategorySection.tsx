@@ -99,7 +99,7 @@ export default function CategorySection() {
                         {title}
                     </h2>
                     <motion.button
-                        className="flex items-center gap-2 text-[#6B4BA8] hover:text-[#884be3] transition-colors"
+                        className="hidden items-center gap-2 text-[#6B4BA8] hover:text-[#884be3] transition-colors"
                         whileHover={{ x: 5 }}
                     >
                         {ctaLabel}
