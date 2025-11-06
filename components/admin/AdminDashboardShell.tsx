@@ -9,6 +9,7 @@ import AdminBooksManager from './AdminBooksManager';
 import AdminSettings from './AdminSettings';
 import AdminReviews from './AdminReviews';
 import AdminSocialLinks from './AdminSocialLinks';
+import AdminCategories from './AdminCategories';
 
 type AdminPage = 'books' | 'categories' | 'hero' | 'reviews' | 'social' | 'contact';
 
@@ -30,12 +31,7 @@ export default function AdminDashboardShell({ onLogout }: AdminDashboardShellPro
       case 'books':
         return <AdminBooksManager />;
       case 'categories':
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-bold text-[#2D1B4E]">বইয়ের বিভাগ</h2>
-            <p className="text-[#6B4BA8] mt-4">বিভাগ ব্যবস্থাপনা খুব শীঘ্রই যুক্ত হবে...</p>
-          </div>
-        );
+        return <AdminCategories />;
       case 'hero':
         return <AdminSettings />;
       case 'reviews':

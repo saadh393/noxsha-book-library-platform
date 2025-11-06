@@ -178,7 +178,7 @@ export default function BookDetails({ bookId, onBack, onBookClick }: BookDetails
             >
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-[#6B4BA8]">বিভাগ:</span>
+                  <span className="text-[#6B4BA8]">ক্যাটেগরি:</span>
                   <span className="ml-2 font-semibold text-[#2D1B4E]">{book.category}</span>
                 </div>
                 <div>
@@ -316,7 +316,7 @@ export default function BookDetails({ bookId, onBack, onBookClick }: BookDetails
                 <div className="grid grid-cols-2 gap-6">
                   {[
                     ['লেখক', book.author],
-                    ['বিভাগ', book.category],
+                    ['ক্যাটেগরি', book.category],
                     ['রেটিং', `${book.rating.toLocaleString('bn-BD', { maximumFractionDigits: 1 })} / ৫`],
                     ['ডাউনলোড', book.sales_count.toLocaleString('bn-BD')],
                     ['ফরম্যাট', 'পিডিএফ, ইপাব'],

@@ -6,6 +6,7 @@ import type {
   Review,
   SiteSetting,
   SocialLink,
+  Category,
 } from './types';
 
 type PrimitiveRow = Record<string, any>;
@@ -100,5 +101,18 @@ export function serializeHighlightService(row: PrimitiveRow): HighlightService {
     description: row.description,
     icon_name: row.icon_name,
     display_order: Number(row.display_order ?? 0),
+  };
+}
+
+export function serializeCategory(row: PrimitiveRow): Category {
+  return {
+    id: row.id,
+    name: row.name,
+    icon_name: row.icon_name,
+    color_h: Number(row.color_h ?? 0),
+    color_s: Number(row.color_s ?? 0),
+    color_l: Number(row.color_l ?? 0),
+    created_at: toIsoString(row.created_at),
+    updated_at: toIsoString(row.updated_at),
   };
 }

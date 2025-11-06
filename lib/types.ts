@@ -65,6 +65,17 @@ export interface HighlightService {
   display_order: number;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  icon_name: string;
+  color_h: number;
+  color_s: number;
+  color_l: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface BookDocument {
   _id: string;
   id: string;
@@ -140,6 +151,18 @@ export interface HighlightServiceDocument {
   icon_name: string;
   display_order: number;
   created_at: Date;
+}
+
+export interface CategoryDocument {
+  _id: string;
+  id: string;
+  name: string;
+  icon_name: string;
+  color_h: number;
+  color_s: number;
+  color_l: number;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface AdminUserDocument {

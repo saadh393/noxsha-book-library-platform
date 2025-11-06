@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2, Upload, ArrowLeft } from "lucide-react";
-import { createBook, uploadToStorage } from "@/lib/api";
+import { createBook, uploadToStorage, fetchCategories } from "@/lib/api";
 import { getSession } from "@/lib/auth";
+import type { Category } from "@/lib/types";
 
 interface BookForm {
     title: string;
@@ -19,33 +20,19 @@ interface BookForm {
     is_new: boolean;
 }
 
-const CATEGORY_OPTIONS = [
-    "General",
-    "History",
-    "Science Fiction",
-    "Self-improvement",
-    "Psychology",
-    "Business",
-    "Finance",
-    "Communication",
-    "Fiction",
-    "Classics",
-    "Thriller",
-    "Adventure",
-    "Health",
-    "Technology",
-];
-
 export default function AdminBookCreatePage() {
     const router = useRouter();
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
+    const [categoryOptions, setCategoryOptions] = useState<Category[]>([]);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+    const [categoryError, setCategoryError] = useState<string | null>(null);
     const [formData, setFormData] = useState<BookForm>({
         title: "",
         author: "",
-        category: "General",
+        category: "",
         description: "",
         price: 0,
         old_price: null,
@@ -74,6 +61,27 @@ export default function AdminBookCreatePage() {
             setIsCheckingAuth(false);
         })();
     }, [router]);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const response = await fetchCategories();
+                const options = response.data ?? [];
+                setCategoryOptions(options);
+                setFormData((prev) => {
+                    if (prev.category && options.some((option) => option.name === prev.category)) {
+                        return prev;
+                    }
+                    return { ...prev, category: options[0]?.name ?? "" };
+                });
+            } catch (error) {
+                console.error("Failed to load categories", error);
+                setCategoryError("ক্যাটেগরি লোড করতে ব্যর্থ হলাম");
+            } finally {
+                setIsLoadingCategories(false);
+            }
+        })();
+    }, []);
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
@@ -126,6 +134,18 @@ export default function AdminBookCreatePage() {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (categoryOptions.length === 0) {
+            setStatusMessage("কমপক্ষে একটি ক্যাটেগরি তৈরি করুন");
+            return;
+        }
+        if (!formData.category) {
+            setStatusMessage("একটি বৈধ ক্যাটেগরি নির্বাচন করুন");
+            return;
+        }
+        if (!categoryOptions.some((option) => option.name === formData.category)) {
+            setStatusMessage("নির্বাচিত ক্যাটেগরি তালিকায় নেই। অনুগ্রহ করে পুনরায় নির্বাচন করুন।");
+            return;
+        }
         setIsSubmitting(true);
         setStatusMessage(null);
 
@@ -205,26 +225,36 @@ export default function AdminBookCreatePage() {
                                 name="author"
                                 value={formData.author}
                                 onChange={handleInputChange}
-                                required
-                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#884be3] outline-none transition-colors"
-                                placeholder="লেখকের নাম"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-[#2D1B4E] mb-2">বিভাগ *</label>
-                            <select
-                                name="category"
-                                value={formData.category}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#884be3] outline-none transition-colors"
-                            >
-                                {CATEGORY_OPTIONS.map((option) => (
-                                    <option key={option} value={option}>
-                                        {option}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                                    required
+                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#884be3] outline-none transition-colors"
+                                    placeholder="লেখকের নাম"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-[#2D1B4E] mb-2">
+                                    ক্যাটেগরি *
+                                </label>
+                                <select
+                                    name="category"
+                                    value={formData.category}
+                                    onChange={handleInputChange}
+                                    disabled={isLoadingCategories || categoryOptions.length === 0}
+                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#884be3] outline-none transition-colors disabled:bg-gray-100"
+                                >
+                                    {isLoadingCategories && <option value="">ক্যাটেগরি লোড হচ্ছে...</option>}
+                                    {!isLoadingCategories && categoryOptions.length === 0 && (
+                                        <option value="">ক্যাটেগরি উপলব্ধ নেই</option>
+                                    )}
+                                    {categoryOptions.map((option) => (
+                                        <option key={option.id} value={option.name}>
+                                            {option.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {categoryError && (
+                                    <p className="text-xs text-red-600 mt-1">{categoryError}</p>
+                                )}
+                            </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-semibold text-[#2D1B4E] mb-2">মূল্য ($) *</label>

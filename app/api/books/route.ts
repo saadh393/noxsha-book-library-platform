@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeBook } from '@/lib/serializers';
-import type { Book, BookDocument } from '@/lib/types';
+import type { Book, BookDocument, CategoryDocument } from '@/lib/types';
 
 export async function GET() {
   try {
@@ -41,7 +41,9 @@ export async function POST(request: NextRequest) {
     old_price,
   } = payload;
 
-  if (!title || !author || !category) {
+  const normalizedCategory = typeof category === 'string' ? category.trim() : '';
+
+  if (!title || !author || !normalizedCategory) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
@@ -49,6 +51,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const collection = await getCollection<BookDocument>('books');
+    const categoriesCollection = await getCollection<CategoryDocument>('categories');
+    const categoryExists = await categoriesCollection.findOne({ name: normalizedCategory });
+
+    if (!categoryExists) {
+      return NextResponse.json({ error: 'Selected category does not exist' }, { status: 400 });
+    }
+
     const numericPrice = Number(price);
     const numericOldPrice = Number(old_price);
     const numericRating = Number(rating);
@@ -71,7 +80,7 @@ export async function POST(request: NextRequest) {
       image_storage_name: image_storage_name ?? null,
       pdf_storage_name: pdf_storage_name ?? null,
       pdf_original_name: pdf_original_name ?? null,
-      category,
+      category: normalizedCategory,
       is_bestseller: Boolean(is_bestseller),
       is_new: Boolean(is_new),
       created_at: new Date(),

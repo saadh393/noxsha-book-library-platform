@@ -2,28 +2,38 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  ArrowRight,
-  BookOpen,
-  Heart,
-  LucideIcon,
-  Sparkles,
-  TrendingUp,
-  Users,
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { fetchHighlightCategories, fetchSiteSettings } from '@/lib/api';
 import type { HighlightCategory } from '@/lib/types';
 
-const ICON_MAP: Record<string, LucideIcon> = {
-  BookOpen,
-  Users,
-  Sparkles,
-  TrendingUp,
-  Heart,
-};
+function normalizeIconName(value: string) {
+  if (!value) return '';
+  const trimmed = value.trim();
+  if (trimmed.includes('-') || trimmed.includes('_') || trimmed.includes(' ')) {
+    return trimmed
+      .split(/[-_\s]+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join('');
+  }
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
+function resolveIcon(name: string): LucideIcon {
+  const normalized = normalizeIconName(name);
+  const record = LucideIcons as Record<string, unknown>;
+  const candidate = record[normalized];
+  if (typeof candidate === 'function') {
+    return candidate as LucideIcon;
+  }
+  const fallback = record.BookOpen;
+  return (typeof fallback === 'function' ? fallback : () => null) as LucideIcon;
+}
 
 export default function CategorySection() {
-  const [title, setTitle] = useState('বিভাগ');
+  const [title, setTitle] = useState('ক্যাটেগরি');
   const [ctaLabel, setCtaLabel] = useState('সব দেখুন');
   const [categories, setCategories] = useState<HighlightCategory[]>([]);
 
@@ -64,8 +74,6 @@ export default function CategorySection() {
     () => categories.slice().sort((a, b) => a.display_order - b.display_order),
     [categories],
   );
-
-  const resolveIcon = (iconName: string): LucideIcon => ICON_MAP[iconName] ?? BookOpen;
 
   return (
     <section className="py-12 bg-white">

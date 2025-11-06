@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeBook } from '@/lib/serializers';
-import type { Book, BookDocument } from '@/lib/types';
+import type { Book, BookDocument, CategoryDocument } from '@/lib/types';
 
 export async function GET(
   _request: NextRequest,
@@ -49,7 +49,14 @@ export async function PATCH(
 
   if (payload.title !== undefined) updates.title = payload.title;
   if (payload.author !== undefined) updates.author = payload.author;
-  if (payload.category !== undefined) updates.category = payload.category;
+  let pendingCategory: string | undefined;
+  if (payload.category !== undefined) {
+    const categoryValue = typeof payload.category === 'string' ? payload.category.trim() : '';
+    if (!categoryValue) {
+      return NextResponse.json({ error: 'Category cannot be empty' }, { status: 400 });
+    }
+    pendingCategory = categoryValue;
+  }
   if (payload.description !== undefined) updates.description = payload.description ?? '';
   if (payload.price !== undefined) {
     const numericPrice = Number(payload.price);
@@ -86,6 +93,14 @@ export async function PATCH(
 
   try {
     const collection = await getCollection<BookDocument>('books');
+    if (pendingCategory) {
+      const categoriesCollection = await getCollection<CategoryDocument>('categories');
+      const categoryExists = await categoriesCollection.findOne({ name: pendingCategory });
+      if (!categoryExists) {
+        return NextResponse.json({ error: 'Selected category does not exist' }, { status: 400 });
+      }
+      updates.category = pendingCategory;
+    }
     const result = await collection.updateOne({ _id: id }, { $set: updates });
 
     if (result.matchedCount === 0) {

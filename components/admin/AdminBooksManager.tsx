@@ -187,7 +187,7 @@ export default function AdminBooksManager() {
           <thead className="bg-[#F5F3FF] text-[#4C1D95] text-xs uppercase tracking-wider">
             <tr>
               <th className="px-4 py-3 font-semibold">বই</th>
-              <th className="px-4 py-3 font-semibold">বিভাগ</th>
+              <th className="px-4 py-3 font-semibold">ক্যাটেগরি</th>
               <th className="px-4 py-3 font-semibold">মূল্য</th>
               <th className="px-4 py-3 font-semibold">ধরন</th>
               <th className="px-4 py-3 font-semibold">প্রকাশ</th>

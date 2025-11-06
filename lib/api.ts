@@ -5,6 +5,7 @@ import type {
     NavLink,
     Review,
     SocialLink,
+    Category,
 } from "./types";
 
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -266,12 +267,7 @@ export async function uploadToStorage(file: File, type: "image" | "pdf") {
     formData.append("type", type);
     formData.append("file", file, file.name);
 
-    const BASE_URL = process.env.NEXT_PUBLIC_STORAGE_BASE_URL;
-    if (!BASE_URL) {
-        throw new Error("Storage base URL is not defined");
-    }
-
-    const response = await fetch(BASE_URL + "/api/storage/upload", {
+    const response = await fetch("/api/storage/upload", {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -406,6 +402,53 @@ export async function updateHighlightService(
 
 export async function deleteHighlightService(id: string) {
     const response = await fetch(`/api/highlight-services/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+    });
+    return handleResponse<{ success: boolean }>(response);
+}
+
+export async function fetchCategories() {
+    const response = await fetch("/api/categories", {
+        cache: "no-store",
+        credentials: "include",
+    });
+    return handleResponse<{ data: Category[] }>(response);
+}
+
+export async function createCategory(payload: {
+    name: string;
+    icon_name: string;
+    color: { h: number; s: number; l: number };
+}) {
+    const response = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+    });
+    return handleResponse<{ data: Category }>(response);
+}
+
+export async function updateCategory(
+    id: string,
+    payload: Partial<{
+        name: string;
+        icon_name: string;
+        color: { h: number; s: number; l: number };
+    }>
+) {
+    const response = await fetch(`/api/categories/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+    });
+    return handleResponse<{ data: Category }>(response);
+}
+
+export async function deleteCategory(id: string) {
+    const response = await fetch(`/api/categories/${id}`, {
         method: "DELETE",
         credentials: "include",
     });

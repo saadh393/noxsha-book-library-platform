@@ -4,26 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, Loader2, Upload } from "lucide-react";
-import { fetchBookDetails, updateBook, uploadToStorage } from "@/lib/api";
+import { fetchBookDetails, updateBook, uploadToStorage, fetchCategories } from "@/lib/api";
 import { getSession } from "@/lib/auth";
-import type { Book } from "@/lib/types";
-
-const CATEGORY_OPTIONS = [
-    "General",
-    "History",
-    "Science Fiction",
-    "Self-improvement",
-    "Psychology",
-    "Business",
-    "Finance",
-    "Communication",
-    "Fiction",
-    "Classics",
-    "Thriller",
-    "Adventure",
-    "Health",
-    "Technology",
-];
+import type { Book, Category } from "@/lib/types";
 
 export default function AdminBookEditPage() {
     const router = useRouter();
@@ -36,11 +19,14 @@ export default function AdminBookEditPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
     const [book, setBook] = useState<Book | null>(null);
+    const [categoryOptions, setCategoryOptions] = useState<Category[]>([]);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+    const [categoryError, setCategoryError] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         title: "",
         author: "",
-        category: "General",
+        category: "",
         description: "",
         price: 0,
         old_price: null as number | null,
@@ -70,6 +56,26 @@ export default function AdminBookEditPage() {
             setIsCheckingAuth(false);
         })();
     }, [router]);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const response = await fetchCategories();
+                setCategoryOptions(response.data ?? []);
+            } catch (error) {
+                console.error("Failed to load categories", error);
+                setCategoryError("ক্যাটেগরি লোড করতে ব্যর্থ হলাম");
+            } finally {
+                setIsLoadingCategories(false);
+            }
+        })();
+    }, []);
+
+    useEffect(() => {
+        if (!isLoadingCategories && categoryOptions.length > 0) {
+            setFormData((prev) => (prev.category ? prev : { ...prev, category: categoryOptions[0].name }));
+        }
+    }, [isLoadingCategories, categoryOptions]);
 
     useEffect(() => {
         if (!bookId) return;
@@ -150,6 +156,18 @@ export default function AdminBookEditPage() {
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (!book) return;
+        if (categoryOptions.length === 0) {
+            setStatusMessage("কমপক্ষে একটি ক্যাটেগরি তৈরি করুন");
+            return;
+        }
+        if (!formData.category) {
+            setStatusMessage("একটি বৈধ ক্যাটেগরি নির্বাচন করুন");
+            return;
+        }
+        if (!categoryOptions.some((option) => option.name === formData.category)) {
+            setStatusMessage("নির্বাচিত ক্যাটেগরি তালিকায় নেই। অনুগ্রহ করে পুনরায় নির্বাচন করুন।");
+            return;
+        }
 
         setIsSubmitting(true);
         setStatusMessage(null);
@@ -234,19 +252,36 @@ export default function AdminBookEditPage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-[#2D1B4E] mb-2">বিভাগ *</label>
+                            <label className="block text-sm font-semibold text-[#2D1B4E] mb-2">
+                                ক্যাটেগরি *
+                            </label>
                             <select
                                 name="category"
                                 value={formData.category}
                                 onChange={handleInputChange}
-                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#884be3] outline-none transition-colors"
+                                disabled={isLoadingCategories || categoryOptions.length === 0}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#884be3] outline-none transition-colors disabled:bg-gray-100"
                             >
-                                {CATEGORY_OPTIONS.map((option) => (
-                                    <option key={option} value={option}>
-                                        {option}
+                                {isLoadingCategories && <option value="">ক্যাটেগরি লোড হচ্ছে...</option>}
+                                {!isLoadingCategories && categoryOptions.length === 0 && (
+                                    <option value="">ক্যাটেগরি উপলব্ধ নেই</option>
+                                )}
+                                {categoryOptions.map((option) => (
+                                    <option key={option.id} value={option.name}>
+                                        {option.name}
                                     </option>
                                 ))}
+                                {!isLoadingCategories &&
+                                    formData.category &&
+                                    !categoryOptions.some((option) => option.name === formData.category) && (
+                                        <option value={formData.category}>
+                                            {formData.category} (legacy)
+                                        </option>
+                                    )}
                             </select>
+                            {categoryError && (
+                                <p className="text-xs text-red-600 mt-1">{categoryError}</p>
+                            )}
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
