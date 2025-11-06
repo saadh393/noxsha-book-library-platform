@@ -11,7 +11,7 @@ import {
     Mail,
 } from "lucide-react";
 
-type AdminPage =
+export type AdminPage =
     | "books"
     | "categories"
     | "hero"
@@ -29,7 +29,7 @@ const menuItems: { label: string; icon: React.ReactNode; page: AdminPage }[] = [
     { label: "বই ব্যবস্থাপনা", icon: <BookOpen size={20} />, page: "books" },
     { label: "ক্যাটেগরি", icon: <Grid3x3 size={20} />, page: "categories" },
     { label: "হিরো সেকশন", icon: <Type size={20} />, page: "hero" },
-    // { label: 'রিভিউ', icon: <MessageSquare size={20} />, page: 'reviews' },
+    // { label: "রিভিউ", icon: <MessageSquare size={20} />, page: "reviews" },
     { label: "সোশ্যাল লিঙ্ক", icon: <Share2 size={20} />, page: "social" },
     {
         label: "ডাউনলোড রেকর্ড",
