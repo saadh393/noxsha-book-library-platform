@@ -114,5 +114,6 @@ export function serializeCategory(row: PrimitiveRow): Category {
     color_l: Number(row.color_l ?? 0),
     created_at: toIsoString(row.created_at),
     updated_at: toIsoString(row.updated_at),
+    book_count: row.book_count !== undefined ? Number(row.book_count) : undefined,
   };
 }

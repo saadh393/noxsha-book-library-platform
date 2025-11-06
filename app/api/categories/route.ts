@@ -24,7 +24,35 @@ function clamp(value: number, min: number, max: number) {
 export async function GET() {
   try {
     const collection = await getCollection<CategoryDocument>('categories');
-    const documents = await collection.find({}, { sort: { name: 1 } }).toArray();
+    const documents = await collection
+      .aggregate<
+        CategoryDocument & {
+          book_stats?: Array<{ total: number }>;
+          book_count?: number;
+        }
+      >([
+        { $sort: { name: 1 } },
+        {
+          $lookup: {
+            from: 'books',
+            let: { categoryName: '$name' },
+            pipeline: [
+              { $match: { $expr: { $eq: ['$category', '$$categoryName'] } } },
+              { $count: 'total' },
+            ],
+            as: 'book_stats',
+          },
+        },
+        {
+          $addFields: {
+            book_count: {
+              $ifNull: [{ $arrayElemAt: ['$book_stats.total', 0] }, 0],
+            },
+          },
+        },
+        { $project: { book_stats: 0 } },
+      ])
+      .toArray();
     return NextResponse.json({ data: documents.map<Category>((doc) => serializeCategory(doc)) });
   } catch (error) {
     console.error('Error fetching categories', error);
@@ -80,7 +108,7 @@ export async function POST(request: NextRequest) {
 
     await collection.insertOne(document);
 
-    return NextResponse.json({ data: serializeCategory(document) }, { status: 201 });
+    return NextResponse.json({ data: serializeCategory({ ...document, book_count: 0 }) }, { status: 201 });
   } catch (error) {
     console.error('Error creating category', error);
     return NextResponse.json({ error: 'Failed to create category' }, { status: 500 });

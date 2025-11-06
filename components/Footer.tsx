@@ -2,16 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  Facebook,
-  Globe,
-  Instagram,
-  Linkedin,
-  LucideIcon,
-  Twitter,
-  Youtube,
-  Github,
-} from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { fetchActiveSocialLinks, fetchSiteSettings } from '@/lib/api';
 import type { SocialLink } from '@/lib/types';
 
@@ -20,14 +12,28 @@ interface FooterLinkItem {
   href?: string;
 }
 
-const SOCIAL_ICON_MAP: Record<string, LucideIcon> = {
-  Facebook,
-  Instagram,
-  Twitter,
-  Linkedin,
-  Youtube,
-  Github,
-};
+function normalizeIconName(value: string) {
+  if (!value) return '';
+  const trimmed = value.trim();
+  if (trimmed.includes('-') || trimmed.includes('_') || trimmed.includes(' ')) {
+    return trimmed
+      .split(/[-_\s]+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join('');
+  }
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
+function resolveIcon(name: string): LucideIcon {
+  const record = LucideIcons as Record<string, unknown>;
+  const candidate = record[name];
+  if (typeof candidate === 'function') {
+    return candidate as LucideIcon;
+  }
+  const fallback = record.Globe;
+  return (typeof fallback === 'function' ? fallback : () => null) as LucideIcon;
+}
 
 export default function Footer() {
   const [companyName, setCompanyName] = useState('নোকশা');
@@ -101,12 +107,24 @@ export default function Footer() {
     };
   }, []);
 
-  const socialIcon = (iconName: string): LucideIcon => SOCIAL_ICON_MAP[iconName] ?? Globe;
-
   const normalizedQuickLinks = useMemo(() => quickLinks.filter((item) => item.label?.length), [quickLinks]);
   const normalizedContactLinks = useMemo(
     () => contactLinks.filter((item) => item.label?.length),
     [contactLinks],
+  );
+  const socialLinkItems = useMemo<FooterLinkItem[]>(
+    () =>
+      socialLinks
+        .filter((link) => link.platform?.length && link.url?.length)
+        .map((link) => ({
+          label: link.platform,
+          href: link.url,
+        })),
+    [socialLinks],
+  );
+  const contactSectionItems = useMemo(
+    () => [...normalizedContactLinks, ...socialLinkItems],
+    [normalizedContactLinks, socialLinkItems],
   );
 
   return (
@@ -122,7 +140,7 @@ export default function Footer() {
             <p className="text-[#6B4BA8] text-sm mb-4">{description}</p>
             <div className="flex gap-3">
               {socialLinks.map((link) => {
-                const Icon = socialIcon(link.icon_name);
+                const Icon = resolveIcon(normalizeIconName(link.icon_name));
                 return (
                   <motion.a
                     key={link.id}
@@ -140,7 +158,7 @@ export default function Footer() {
             </div>
           </motion.div>
 
-          {[{ title: 'দ্রুত লিংক', items: normalizedQuickLinks }, { title: 'যোগাযোগ করুন', items: normalizedContactLinks }].map(
+          {[{ title: 'দ্রুত লিংক', items: normalizedQuickLinks }, { title: 'যোগাযোগ করুন', items: contactSectionItems }].map(
             (section, index) => (
               <motion.div
                 key={section.title}

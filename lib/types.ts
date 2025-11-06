@@ -74,6 +74,7 @@ export interface Category {
   color_l: number;
   created_at: string;
   updated_at: string;
+  book_count?: number;
 }
 
 export interface BookDocument {

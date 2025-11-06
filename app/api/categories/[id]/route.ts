@@ -97,7 +97,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'Category not found after update' }, { status: 404 });
     }
 
-    return NextResponse.json({ data: serializeCategory(updated) });
+    const booksCollection = await getCollection<BookDocument>('books');
+    const bookCount = await booksCollection.countDocuments({ category: updated.name });
+
+    return NextResponse.json({ data: serializeCategory({ ...updated, book_count: bookCount }) });
   } catch (error) {
     console.error('Error updating category', error);
     return NextResponse.json({ error: 'Failed to update category' }, { status: 500 });
