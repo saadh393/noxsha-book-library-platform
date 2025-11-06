@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { RowDataPacket } from 'mysql2/promise';
-import { execute, query } from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeBook } from '@/lib/serializers';
-import type { Book } from '@/lib/types';
-
-type BookRow = RowDataPacket & Record<string, unknown>;
+import type { Book, BookDocument } from '@/lib/types';
 
 export async function GET(
   _request: NextRequest,
@@ -14,26 +11,19 @@ export async function GET(
   const { id } = await context.params;
 
   try {
-    const bookRows = await query<BookRow[]>('SELECT * FROM books WHERE id = ?', [id]);
+    const collection = await getCollection<BookDocument>('books');
+    const book = await collection.findOne({ _id: id });
 
-    if (bookRows.length === 0) {
+    if (!book) {
       return NextResponse.json({ error: 'Book not found' }, { status: 404 });
     }
 
-    const bookRow = bookRows[0];
-    const relatedRows = await query<BookRow[]>(
-      `
-      SELECT *
-      FROM books
-      WHERE category = ? AND id <> ?
-      ORDER BY created_at DESC
-      LIMIT 5
-    `,
-      [bookRow.category, id],
-    );
+    const relatedRows = await collection
+      .find({ category: book.category, _id: { $ne: id } }, { sort: { created_at: -1 }, limit: 5 })
+      .toArray();
 
     return NextResponse.json({
-      book: serializeBook(bookRow),
+      book: serializeBook(book),
       related: relatedRows.map<Book>((row) => serializeBook(row)),
     });
   } catch (error) {
@@ -55,51 +45,60 @@ export async function PATCH(
   const { id } = await context.params;
   const payload = await request.json();
 
-  const allowedFields: Record<string, unknown> = {
-    title: payload.title,
-    author: payload.author,
-    category: payload.category,
-    description: payload.description,
-    price: payload.price,
-    old_price: payload.old_price,
-    rating: payload.rating,
-    is_bestseller: payload.is_bestseller,
-    is_new: payload.is_new,
-    image_url: payload.image_url,
-    image_storage_name: payload.image_storage_name,
-    pdf_storage_name: payload.pdf_storage_name,
-    pdf_original_name: payload.pdf_original_name,
-  };
+  const updates: Partial<BookDocument> = {};
 
-  const updates: string[] = [];
-  const values: Array<string | number | null> = [];
-
-  for (const [field, value] of Object.entries(allowedFields)) {
-    if (value === undefined) continue;
-
-    if (field === 'is_bestseller' || field === 'is_new') {
-      updates.push(`${field} = ?`);
-      values.push(value ? 1 : 0);
-      continue;
+  if (payload.title !== undefined) updates.title = payload.title;
+  if (payload.author !== undefined) updates.author = payload.author;
+  if (payload.category !== undefined) updates.category = payload.category;
+  if (payload.description !== undefined) updates.description = payload.description ?? '';
+  if (payload.price !== undefined) {
+    const numericPrice = Number(payload.price);
+    if (!Number.isNaN(numericPrice)) {
+      updates.price = numericPrice;
     }
-
-    updates.push(`${field} = ?`);
-    values.push(value as string | number | null);
   }
+  if (payload.old_price !== undefined) {
+    if (payload.old_price === null || payload.old_price === '') {
+      updates.old_price = null;
+    } else {
+      const numericOldPrice = Number(payload.old_price);
+      if (!Number.isNaN(numericOldPrice)) {
+        updates.old_price = numericOldPrice;
+      }
+    }
+  }
+  if (payload.rating !== undefined) {
+    const numericRating = Number(payload.rating);
+    if (!Number.isNaN(numericRating)) {
+      updates.rating = numericRating;
+    }
+  }
+  if (payload.is_bestseller !== undefined) updates.is_bestseller = Boolean(payload.is_bestseller);
+  if (payload.is_new !== undefined) updates.is_new = Boolean(payload.is_new);
+  if (payload.image_url !== undefined) updates.image_url = payload.image_url ?? null;
+  if (payload.image_storage_name !== undefined) updates.image_storage_name = payload.image_storage_name ?? null;
+  if (payload.pdf_storage_name !== undefined) updates.pdf_storage_name = payload.pdf_storage_name ?? null;
+  if (payload.pdf_original_name !== undefined) updates.pdf_original_name = payload.pdf_original_name ?? null;
 
-  if (updates.length === 0) {
+  if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'No fields provided' }, { status: 400 });
   }
 
   try {
-    await execute(`UPDATE books SET ${updates.join(', ')} WHERE id = ?`, [...values, id]);
-    const rows = await query<BookRow[]>('SELECT * FROM books WHERE id = ?', [id]);
+    const collection = await getCollection<BookDocument>('books');
+    const result = await collection.updateOne({ _id: id }, { $set: updates });
 
-    if (rows.length === 0) {
+    if (result.matchedCount === 0) {
       return NextResponse.json({ error: 'Book not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ data: serializeBook(rows[0]) });
+    const updated = await collection.findOne({ _id: id });
+
+    if (!updated) {
+      return NextResponse.json({ error: 'Book not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ data: serializeBook(updated) });
   } catch (error) {
     console.error('Error updating book', error);
     return NextResponse.json({ error: 'Failed to update book' }, { status: 500 });
@@ -119,9 +118,10 @@ export async function DELETE(
   const { id } = await context.params;
 
   try {
-    const result = await execute('DELETE FROM books WHERE id = ?', [id]);
+    const collection = await getCollection<BookDocument>('books');
+    const result = await collection.deleteOne({ _id: id });
 
-    if (result.affectedRows === 0) {
+    if (result.deletedCount === 0) {
       return NextResponse.json({ error: 'Book not found' }, { status: 404 });
     }
 

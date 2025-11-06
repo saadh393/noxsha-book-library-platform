@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { execute } from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
+import type { SocialLinkDocument } from '@/lib/types';
 
 export async function PATCH(
   request: NextRequest,
@@ -15,35 +16,36 @@ export async function PATCH(
   const { id } = await context.params;
   const payload = await request.json();
 
-  const fields: string[] = [];
-  const values: Array<string | number> = [];
+  const updates: Partial<SocialLinkDocument> = {};
 
   if (payload.platform !== undefined) {
-    fields.push('platform = ?');
-    values.push(payload.platform);
+    updates.platform = payload.platform;
   }
 
   if (payload.url !== undefined) {
-    fields.push('url = ?');
-    values.push(payload.url);
+    updates.url = payload.url;
   }
 
   if (payload.icon_name !== undefined) {
-    fields.push('icon_name = ?');
-    values.push(payload.icon_name);
+    updates.icon_name = payload.icon_name;
   }
 
   if (payload.is_active !== undefined) {
-    fields.push('is_active = ?');
-    values.push(payload.is_active ? 1 : 0);
+    updates.is_active = Boolean(payload.is_active);
   }
 
-  if (fields.length === 0) {
+  if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'No fields provided' }, { status: 400 });
   }
 
   try {
-    await execute(`UPDATE social_links SET ${fields.join(', ')} WHERE id = ?`, [...values, id]);
+    const collection = await getCollection<SocialLinkDocument>('social_links');
+    const result = await collection.updateOne({ _id: id }, { $set: updates });
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json({ error: 'Social link not found' }, { status: 404 });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating social link', error);
@@ -64,7 +66,13 @@ export async function DELETE(
   const { id } = await context.params;
 
   try {
-    await execute('DELETE FROM social_links WHERE id = ?', [id]);
+    const collection = await getCollection<SocialLinkDocument>('social_links');
+    const result = await collection.deleteOne({ _id: id });
+
+    if (result.deletedCount === 0) {
+      return NextResponse.json({ error: 'Social link not found' }, { status: 404 });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting social link', error);

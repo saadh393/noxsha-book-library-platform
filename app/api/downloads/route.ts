@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { execute } from '@/lib/db';
+import { getCollection } from '@/lib/db';
+import type { DownloadDocument } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
   const { bookId, name, email, phone, address } = await request.json();
@@ -10,13 +11,19 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await execute(
-      `
-      INSERT INTO downloads (id, book_id, name, email, phone, address)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `,
-      [randomUUID(), bookId, name, email, phone, address],
-    );
+    const collection = await getCollection<DownloadDocument>('downloads');
+    const id = randomUUID();
+
+    await collection.insertOne({
+      _id: id,
+      id,
+      book_id: bookId,
+      name,
+      email,
+      phone,
+      address,
+      created_at: new Date(),
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,16 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import type { RowDataPacket } from 'mysql2/promise';
-import { execute, query } from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeNavLink } from '@/lib/serializers';
-import type { NavLink } from '@/lib/types';
-
-type NavRow = RowDataPacket & Record<string, unknown>;
+import type { NavLink, NavLinkDocument } from '@/lib/types';
 
 export async function GET() {
   try {
-    const rows = await query<NavRow[]>('SELECT * FROM nav_links ORDER BY display_order ASC, created_at ASC');
+    const collection = await getCollection<NavLinkDocument>('nav_links');
+    const rows = await collection.find({}, { sort: { display_order: 1, created_at: 1 } }).toArray();
     return NextResponse.json({ data: rows.map<NavLink>((row) => serializeNavLink(row)) });
   } catch (error) {
     console.error('Error fetching navigation links', error);
@@ -35,16 +33,18 @@ export async function POST(request: NextRequest) {
   const id = randomUUID();
 
   try {
-    await execute(
-      `
-      INSERT INTO nav_links (id, label, href, display_order)
-      VALUES (?, ?, ?, ?)
-    `,
-      [id, label, href, Number.isFinite(display_order) ? Number(display_order) : 0],
-    );
+    const collection = await getCollection<NavLinkDocument>('nav_links');
+    const document: NavLinkDocument = {
+      _id: id,
+      id,
+      label,
+      href,
+      display_order: Number.isFinite(display_order) ? Number(display_order) : 0,
+      created_at: new Date(),
+    };
 
-    const rows = await query<NavRow[]>('SELECT * FROM nav_links WHERE id = ?', [id]);
-    return NextResponse.json({ data: serializeNavLink(rows[0]) }, { status: 201 });
+    await collection.insertOne(document);
+    return NextResponse.json({ data: serializeNavLink(document) }, { status: 201 });
   } catch (error) {
     console.error('Error creating navigation link', error);
     return NextResponse.json({ error: 'Failed to create navigation link' }, { status: 500 });

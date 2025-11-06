@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { RowDataPacket } from 'mysql2/promise';
-import { query } from '@/lib/db';
+import type { Document } from 'mongodb';
+import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeReview } from '@/lib/serializers';
-import type { Review } from '@/lib/types';
-
-type ReviewRow = RowDataPacket & Record<string, unknown>;
+import type { Review, ReviewDocument } from '@/lib/types';
 
 export async function GET(request: NextRequest) {
   const session = getSessionFromRequest(request);
@@ -17,22 +15,40 @@ export async function GET(request: NextRequest) {
   const filter = request.nextUrl.searchParams.get('filter');
 
   try {
-    let sql = `
-      SELECT r.*, b.title AS book_title
-      FROM reviews r
-      LEFT JOIN books b ON b.id = r.book_id
-    `;
-    const params: Array<string | number> = [];
+    const collection = await getCollection<ReviewDocument>('reviews');
+    const pipeline: Document[] = [];
 
     if (filter === 'approved') {
-      sql += ' WHERE r.is_approved = 1';
+      pipeline.push({ $match: { is_approved: true } });
     } else if (filter === 'pending') {
-      sql += ' WHERE r.is_approved = 0';
+      pipeline.push({ $match: { is_approved: false } });
     }
 
-    sql += ' ORDER BY r.created_at DESC';
+    pipeline.push(
+      { $sort: { created_at: -1 } },
+      {
+        $lookup: {
+          from: 'books',
+          localField: 'book_id',
+          foreignField: 'id',
+          as: 'book_docs',
+        },
+      },
+      {
+        $addFields: {
+          book_title: {
+            $cond: [
+              { $gt: [{ $size: '$book_docs' }, 0] },
+              { $arrayElemAt: ['$book_docs.title', 0] },
+              null,
+            ],
+          },
+        },
+      },
+      { $project: { book_docs: 0 } },
+    );
 
-    const rows = await query<ReviewRow[]>(sql, params);
+    const rows = await collection.aggregate<(ReviewDocument & { book_title?: string | null })>(pipeline).toArray();
 
     return NextResponse.json({
       data: rows.map((row) => ({

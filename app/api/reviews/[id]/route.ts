@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { execute } from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
+import type { ReviewDocument } from '@/lib/types';
 
 export async function PATCH(
   request: NextRequest,
@@ -17,7 +18,13 @@ export async function PATCH(
   const isApproved = Boolean(body.isApproved);
 
   try {
-    await execute('UPDATE reviews SET is_approved = ? WHERE id = ?', [isApproved ? 1 : 0, id]);
+    const collection = await getCollection<ReviewDocument>('reviews');
+    const result = await collection.updateOne({ _id: id }, { $set: { is_approved: isApproved } });
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json({ error: 'Review not found' }, { status: 404 });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating review', error);
@@ -38,7 +45,13 @@ export async function DELETE(
   const { id } = await context.params;
 
   try {
-    await execute('DELETE FROM reviews WHERE id = ?', [id]);
+    const collection = await getCollection<ReviewDocument>('reviews');
+    const result = await collection.deleteOne({ _id: id });
+
+    if (result.deletedCount === 0) {
+      return NextResponse.json({ error: 'Review not found' }, { status: 404 });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting review', error);

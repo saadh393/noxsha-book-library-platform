@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { RowDataPacket } from 'mysql2/promise';
-import { query } from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { serializeBook } from '@/lib/serializers';
-import type { Book } from '@/lib/types';
+import type { Book, BookDocument } from '@/lib/types';
 
-type BookRow = RowDataPacket & Record<string, unknown>;
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 export async function GET(request: NextRequest) {
   const searchQuery = request.nextUrl.searchParams.get('query')?.trim();
@@ -14,16 +15,16 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const likeQuery = `%${searchQuery}%`;
-    const rows = await query<BookRow[]>(
-      `
-      SELECT *
-      FROM books
-      WHERE title LIKE ? OR author LIKE ?
-      ORDER BY rating DESC
-    `,
-      [likeQuery, likeQuery],
-    );
+    const collection = await getCollection<BookDocument>('books');
+    const regex = new RegExp(escapeRegExp(searchQuery), 'i');
+    const rows = await collection
+      .find(
+        {
+          $or: [{ title: { $regex: regex } }, { author: { $regex: regex } }],
+        },
+        { sort: { rating: -1 } },
+      )
+      .toArray();
 
     return NextResponse.json({ data: rows.map<Book>((row) => serializeBook(row)) });
   } catch (error) {

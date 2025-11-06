@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { RowDataPacket } from 'mysql2/promise';
-import { execute, query } from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeHighlightService } from '@/lib/serializers';
-
-type ServiceRow = RowDataPacket & Record<string, unknown>;
+import type { HighlightServiceDocument } from '@/lib/types';
 
 export async function PATCH(
   request: NextRequest,
@@ -18,39 +16,40 @@ export async function PATCH(
 
   const { id } = await context.params;
   const payload = await request.json();
-  const updates: string[] = [];
-  const values: Array<string | number> = [];
+  const updates: Partial<HighlightServiceDocument> = {};
 
   if (payload.title !== undefined) {
-    updates.push('title = ?');
-    values.push(payload.title);
+    updates.title = payload.title;
   }
   if (payload.description !== undefined) {
-    updates.push('description = ?');
-    values.push(payload.description);
+    updates.description = payload.description;
   }
   if (payload.icon_name !== undefined) {
-    updates.push('icon_name = ?');
-    values.push(payload.icon_name);
+    updates.icon_name = payload.icon_name;
   }
   if (payload.display_order !== undefined) {
-    updates.push('display_order = ?');
-    values.push(Number(payload.display_order) || 0);
+    updates.display_order = Number(payload.display_order) || 0;
   }
 
-  if (updates.length === 0) {
+  if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'No fields provided' }, { status: 400 });
   }
 
   try {
-    await execute(`UPDATE highlight_services SET ${updates.join(', ')} WHERE id = ?`, [...values, id]);
-    const rows = await query<ServiceRow[]>('SELECT * FROM highlight_services WHERE id = ?', [id]);
+    const collection = await getCollection<HighlightServiceDocument>('highlight_services');
+    const result = await collection.updateOne({ _id: id }, { $set: updates });
 
-    if (rows.length === 0) {
+    if (result.matchedCount === 0) {
       return NextResponse.json({ error: 'Highlight service not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ data: serializeHighlightService(rows[0]) });
+    const updated = await collection.findOne({ _id: id });
+
+    if (!updated) {
+      return NextResponse.json({ error: 'Highlight service not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ data: serializeHighlightService(updated) });
   } catch (error) {
     console.error('Error updating highlight service', error);
     return NextResponse.json({ error: 'Failed to update highlight service' }, { status: 500 });
@@ -70,9 +69,10 @@ export async function DELETE(
   const { id } = await context.params;
 
   try {
-    const result = await execute('DELETE FROM highlight_services WHERE id = ?', [id]);
+    const collection = await getCollection<HighlightServiceDocument>('highlight_services');
+    const result = await collection.deleteOne({ _id: id });
 
-    if (result.affectedRows === 0) {
+    if (result.deletedCount === 0) {
       return NextResponse.json({ error: 'Highlight service not found' }, { status: 404 });
     }
 

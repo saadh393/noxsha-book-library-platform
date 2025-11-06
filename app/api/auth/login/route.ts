@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { compare } from "bcryptjs";
-import type { RowDataPacket } from "mysql2/promise";
-import { query } from "@/lib/db";
+import { getCollection } from "@/lib/db";
 import { setSessionCookie } from "@/lib/auth-server";
-
-type AdminRow = RowDataPacket & {
-    id: string;
-    email: string;
-    password_hash: string;
-    name: string;
-    is_active: number;
-};
+import type { AdminUserDocument } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
     const { email, password } = await request.json();
@@ -23,12 +15,8 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const rows = await query<AdminRow[]>(
-            "SELECT * FROM admin_users WHERE email = ? LIMIT 1",
-            [email]
-        );
-        console.log(rows);
-        const admin = rows[0];
+        const collection = await getCollection<AdminUserDocument>("admin_users");
+        const admin = await collection.findOne({ email });
 
         if (!admin || !admin.is_active) {
             return NextResponse.json(

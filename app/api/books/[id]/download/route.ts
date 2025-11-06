@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { RowDataPacket } from 'mysql2/promise';
-import { query } from '@/lib/db';
+import { getCollection } from '@/lib/db';
+import type { BookDocument } from '@/lib/types';
 
 const STORAGE_SERVICE_URL = process.env.STORAGE_SERVICE_URL?.replace(/\/$/, '');
 
 if (!STORAGE_SERVICE_URL) {
   throw new Error('STORAGE_SERVICE_URL environment variable is required to generate download links.');
 }
-
-type BookRow = RowDataPacket & {
-  pdf_storage_name: string | null;
-  pdf_original_name: string | null;
-};
 
 export async function GET(
   _request: NextRequest,
@@ -20,13 +15,17 @@ export async function GET(
   const { id } = await context.params;
 
   try {
-    const rows = await query<BookRow[]>('SELECT pdf_storage_name, pdf_original_name FROM books WHERE id = ?', [id]);
+    const collection = await getCollection<BookDocument>('books');
+    const book = await collection.findOne(
+      { _id: id },
+      { projection: { pdf_storage_name: 1, pdf_original_name: 1 } },
+    );
 
-    if (rows.length === 0) {
+    if (!book) {
       return NextResponse.json({ error: 'Book not found' }, { status: 404 });
     }
 
-    const { pdf_storage_name } = rows[0];
+    const { pdf_storage_name } = book;
 
     if (!pdf_storage_name) {
       return NextResponse.json({ error: 'PDF not available for this book' }, { status: 404 });

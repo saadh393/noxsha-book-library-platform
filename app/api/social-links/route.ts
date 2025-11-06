@@ -1,16 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import type { RowDataPacket } from 'mysql2/promise';
-import { execute, query } from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeSocialLink } from '@/lib/serializers';
-import type { SocialLink } from '@/lib/types';
-
-type SocialLinkRow = RowDataPacket & Record<string, unknown>;
+import type { SocialLink, SocialLinkDocument } from '@/lib/types';
 
 export async function GET() {
   try {
-    const rows = await query<SocialLinkRow[]>('SELECT * FROM social_links ORDER BY created_at');
+    const collection = await getCollection<SocialLinkDocument>('social_links');
+    const rows = await collection.find({}, { sort: { created_at: 1 } }).toArray();
     return NextResponse.json({ data: rows.map<SocialLink>((row) => serializeSocialLink(row)) });
   } catch (error) {
     console.error('Error fetching social links', error);
@@ -33,17 +31,20 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const collection = await getCollection<SocialLinkDocument>('social_links');
     const id = randomUUID();
-    await execute(
-      `
-      INSERT INTO social_links (id, platform, url, icon_name, is_active)
-      VALUES (?, ?, ?, ?, 1)
-    `,
-      [id, platform, url, icon_name],
-    );
+    const document: SocialLinkDocument = {
+      _id: id,
+      id,
+      platform,
+      url,
+      icon_name,
+      is_active: true,
+      created_at: new Date(),
+    };
 
-    const rows = await query<SocialLinkRow[]>('SELECT * FROM social_links WHERE id = ?', [id]);
-    return NextResponse.json({ data: serializeSocialLink(rows[0]) }, { status: 201 });
+    await collection.insertOne(document);
+    return NextResponse.json({ data: serializeSocialLink(document) }, { status: 201 });
   } catch (error) {
     console.error('Error creating social link', error);
     return NextResponse.json({ error: 'Failed to create social link' }, { status: 500 });

@@ -1,18 +1,19 @@
 import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import type { RowDataPacket } from 'mysql2/promise';
-import { execute, query } from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeHighlightService } from '@/lib/serializers';
-import type { HighlightService } from '@/lib/types';
-
-type ServiceRow = RowDataPacket & Record<string, unknown>;
+import type {
+  HighlightService,
+  HighlightServiceDocument,
+} from '@/lib/types';
 
 export async function GET() {
   try {
-    const rows = await query<ServiceRow[]>(
-      'SELECT * FROM highlight_services ORDER BY display_order ASC, created_at ASC',
-    );
+    const collection = await getCollection<HighlightServiceDocument>('highlight_services');
+    const rows = await collection
+      .find({}, { sort: { display_order: 1, created_at: 1 } })
+      .toArray();
     return NextResponse.json({ data: rows.map<HighlightService>((row) => serializeHighlightService(row)) });
   } catch (error) {
     console.error('Error fetching highlight services', error);
@@ -37,16 +38,19 @@ export async function POST(request: NextRequest) {
   const id = randomUUID();
 
   try {
-    await execute(
-      `
-      INSERT INTO highlight_services (id, title, description, icon_name, display_order)
-      VALUES (?, ?, ?, ?, ?)
-    `,
-      [id, title, description, icon_name, Number.isFinite(display_order) ? Number(display_order) : 0],
-    );
+    const collection = await getCollection<HighlightServiceDocument>('highlight_services');
+    const document: HighlightServiceDocument = {
+      _id: id,
+      id,
+      title,
+      description,
+      icon_name,
+      display_order: Number.isFinite(display_order) ? Number(display_order) : 0,
+      created_at: new Date(),
+    };
 
-    const rows = await query<ServiceRow[]>('SELECT * FROM highlight_services WHERE id = ?', [id]);
-    return NextResponse.json({ data: serializeHighlightService(rows[0]) }, { status: 201 });
+    await collection.insertOne(document);
+    return NextResponse.json({ data: serializeHighlightService(document) }, { status: 201 });
   } catch (error) {
     console.error('Error creating highlight service', error);
     return NextResponse.json({ error: 'Failed to create highlight service' }, { status: 500 });

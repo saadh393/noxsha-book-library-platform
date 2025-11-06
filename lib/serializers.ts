@@ -1,4 +1,3 @@
-import type { RowDataPacket } from 'mysql2/promise';
 import type {
   Book,
   HighlightCategory,
@@ -9,7 +8,7 @@ import type {
   SocialLink,
 } from './types';
 
-type PrimitiveRow = RowDataPacket & Record<string, any>;
+type PrimitiveRow = Record<string, any>;
 
 function toIsoString(value: Date | string | null): string {
   if (!value) {

@@ -1,16 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import type { RowDataPacket } from 'mysql2/promise';
-import { execute, query } from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeBook } from '@/lib/serializers';
-import type { Book } from '@/lib/types';
-
-type BookRow = RowDataPacket & Record<string, unknown>;
+import type { Book, BookDocument } from '@/lib/types';
 
 export async function GET() {
   try {
-    const rows = await query<BookRow[]>('SELECT * FROM books ORDER BY created_at DESC');
+    const collection = await getCollection<BookDocument>('books');
+    const rows = await collection.find({}, { sort: { created_at: -1 } }).toArray();
     return NextResponse.json({ data: rows.map<Book>((row) => serializeBook(row)) });
   } catch (error) {
     console.error('Error fetching books', error);
@@ -50,46 +48,38 @@ export async function POST(request: NextRequest) {
   const id = randomUUID();
 
   try {
-    await execute(
-      `
-      INSERT INTO books (
-        id,
-        title,
-        author,
-        category,
-        description,
-        rating,
-        is_bestseller,
-        is_new,
-        price,
-        image_url,
-        image_storage_name,
-        pdf_storage_name,
-        pdf_original_name,
-        old_price
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `,
-      [
-        id,
-        title,
-        author,
-        category,
-        description ?? '',
-        rating ?? 0,
-        is_bestseller ? 1 : 0,
-        is_new ? 1 : 0,
-        price ?? 0,
-        image_url ?? null,
-        image_storage_name ?? null,
-        pdf_storage_name ?? null,
-        pdf_original_name ?? null,
-        old_price ?? null,
-      ],
-    );
+    const collection = await getCollection<BookDocument>('books');
+    const numericPrice = Number(price);
+    const numericOldPrice = Number(old_price);
+    const numericRating = Number(rating);
+    const document: BookDocument = {
+      _id: id,
+      id,
+      title,
+      author,
+      price: Number.isNaN(numericPrice) ? 0 : numericPrice,
+      old_price:
+        old_price === null || old_price === undefined || old_price === ''
+          ? null
+          : Number.isNaN(numericOldPrice)
+            ? null
+            : numericOldPrice,
+      rating: Number.isNaN(numericRating) ? 0 : numericRating,
+      sales_count: 0,
+      description: typeof description === 'string' ? description : '',
+      image_url: image_url ?? null,
+      image_storage_name: image_storage_name ?? null,
+      pdf_storage_name: pdf_storage_name ?? null,
+      pdf_original_name: pdf_original_name ?? null,
+      category,
+      is_bestseller: Boolean(is_bestseller),
+      is_new: Boolean(is_new),
+      created_at: new Date(),
+    };
 
-    const rows = await query<BookRow[]>('SELECT * FROM books WHERE id = ?', [id]);
-    return NextResponse.json({ data: serializeBook(rows[0]) }, { status: 201 });
+    await collection.insertOne(document);
+
+    return NextResponse.json({ data: serializeBook(document) }, { status: 201 });
   } catch (error) {
     console.error('Error inserting book', error);
     return NextResponse.json({ error: 'Failed to create book' }, { status: 500 });

@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
-import type { RowDataPacket } from 'mysql2/promise';
-import { query } from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { serializeBook } from '@/lib/serializers';
-import type { Book } from '@/lib/types';
-
-type BookRow = RowDataPacket & Record<string, unknown>;
+import type { Book, BookDocument } from '@/lib/types';
 
 export async function GET() {
   try {
+    const collection = await getCollection<BookDocument>('books');
     const [recommendedRows, recentRows, bestsellingRows, popularRows] = await Promise.all([
-      query<BookRow[]>('SELECT * FROM books ORDER BY rating DESC LIMIT 5'),
-      query<BookRow[]>('SELECT * FROM books ORDER BY created_at DESC LIMIT 5'),
-      query<BookRow[]>('SELECT * FROM books WHERE is_bestseller = 1 ORDER BY created_at DESC LIMIT 4'),
-      query<BookRow[]>('SELECT * FROM books ORDER BY sales_count DESC LIMIT 4'),
+      collection.find({}, { sort: { rating: -1 }, limit: 5 }).toArray(),
+      collection.find({}, { sort: { created_at: -1 }, limit: 5 }).toArray(),
+      collection.find({ is_bestseller: true }, { sort: { created_at: -1 }, limit: 4 }).toArray(),
+      collection.find({}, { sort: { sales_count: -1 }, limit: 4 }).toArray(),
     ]);
 
     const response = {

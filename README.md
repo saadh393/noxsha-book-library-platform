@@ -1,21 +1,21 @@
 # নোকশা-বুক
 
-নোকশা একটি Next.js ভিত্তিক ডিজিটাল লাইব্রেরি যেটি এখন MySQL ডাটাবেজের সাথে সংযুক্ত। ফ্রন্টএন্ডে React 18, Tailwind CSS ও Framer Motion ব্যবহার করা হয়েছে, এবং অ্যাডমিন প্যানেলের জন্য কাস্টম REST API রুট ও JWT কুকি ভিত্তিক অথ প্রয়োগ করা হয়েছে।
+নোকশা একটি Next.js ভিত্তিক ডিজিটাল লাইব্রেরি যা এখন সর্বশেষ MongoDB Atlas/কমিউনিটি সার্ভারের সাথে কাজ করে। ফ্রন্টএন্ডে React 18, Tailwind CSS ও Framer Motion ব্যবহার করা হয়েছে, এবং অ্যাডমিন প্যানেলের জন্য কাস্টম REST API রুট ও JWT কুকি ভিত্তিক অথ প্রয়োগ করা হয়েছে।
 
 ## দ্রুত শুরু
 
-1. `.env.example` কপি করে `.env.local` তৈরি করুন ও প্রয়োজনীয় মান বদলান  
-2. MySQL চালু করে স্কিমা ও সিড ডেটা লোড করুন:
-   ```bash
-   mysql -u root -p < database/schema.sql
-   ```
-   > বিদ্যমান ডাটাবেজ আপগ্রেড করার সময় `database/migrations` ফোল্ডারের সর্বশেষ স্ক্রিপ্টগুলিও চালান, উদাহরণস্বরূপ:
-   > ```bash
-   > mysql -u root -p noxsha < database/migrations/20251102_add_storage_columns.sql
-   > ```
-3. ডিপেন্ডেন্সি ইনস্টল করে ডেভ সার্ভার চালান:
+1. `.env.example` কপি করে `.env.local` তৈরি করুন ও প্রয়োজনীয় MongoDB মান (`MONGODB_URI`, `MONGODB_DB_NAME`) সেট করুন  
+2. লোকাল MongoDB সার্ভার চালু রাখুন (অথবা Atlas কানেকশন প্রস্তুত করুন)
+3. ডিপেন্ডেন্সি ইনস্টল করুন:
    ```bash
    npm install
+   ```
+4. ডিফল্ট ডেটাসেট লোড করুন:
+   ```bash
+   node database/seed.mjs
+   ```
+5. ডেভ সার্ভার চালান:
+   ```bash
    npm run dev
    ```
 

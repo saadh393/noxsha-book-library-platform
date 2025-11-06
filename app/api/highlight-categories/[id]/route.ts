@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { RowDataPacket } from 'mysql2/promise';
-import { execute, query } from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeHighlightCategory } from '@/lib/serializers';
-
-type CategoryRow = RowDataPacket & Record<string, unknown>;
+import type {
+  BookDocument,
+  HighlightCategoryDocument,
+} from '@/lib/types';
 
 export async function PATCH(
   request: NextRequest,
@@ -18,44 +19,40 @@ export async function PATCH(
 
   const { id } = await context.params;
   const payload = await request.json();
-  const updates: string[] = [];
-  const values: Array<string | number> = [];
+  const updates: Partial<HighlightCategoryDocument> = {};
 
   if (payload.name !== undefined) {
-    updates.push('name = ?');
-    values.push(payload.name);
+    updates.name = payload.name;
   }
   if (payload.icon_name !== undefined) {
-    updates.push('icon_name = ?');
-    values.push(payload.icon_name);
+    updates.icon_name = payload.icon_name;
   }
   if (payload.display_order !== undefined) {
-    updates.push('display_order = ?');
-    values.push(Number(payload.display_order) || 0);
+    updates.display_order = Number(payload.display_order) || 0;
   }
 
-  if (updates.length === 0) {
+  if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'No fields provided' }, { status: 400 });
   }
 
   try {
-    await execute(`UPDATE highlight_categories SET ${updates.join(', ')} WHERE id = ?`, [...values, id]);
-    const rows = await query<CategoryRow[]>(
-      `
-      SELECT hc.*, (
-        SELECT COUNT(*) FROM books b WHERE b.category = hc.name
-      ) AS book_count
-      FROM highlight_categories hc
-      WHERE hc.id = ?
-    `,
-      [id],
-    );
+    const categoriesCollection = await getCollection<HighlightCategoryDocument>('highlight_categories');
+    const booksCollection = await getCollection<BookDocument>('books');
 
-    if (rows.length === 0) {
+    const result = await categoriesCollection.updateOne({ _id: id }, { $set: updates });
+
+    if (result.matchedCount === 0) {
       return NextResponse.json({ error: 'Highlight category not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ data: serializeHighlightCategory(rows[0]) });
+    const updated = await categoriesCollection.findOne({ _id: id });
+
+    if (!updated) {
+      return NextResponse.json({ error: 'Highlight category not found' }, { status: 404 });
+    }
+
+    const bookCount = await booksCollection.countDocuments({ category: updated.name });
+    return NextResponse.json({ data: serializeHighlightCategory({ ...updated, book_count: bookCount }) });
   } catch (error) {
     console.error('Error updating highlight category', error);
     return NextResponse.json({ error: 'Failed to update highlight category' }, { status: 500 });
@@ -75,9 +72,10 @@ export async function DELETE(
   const { id } = await context.params;
 
   try {
-    const result = await execute('DELETE FROM highlight_categories WHERE id = ?', [id]);
+    const categoriesCollection = await getCollection<HighlightCategoryDocument>('highlight_categories');
+    const result = await categoriesCollection.deleteOne({ _id: id });
 
-    if (result.affectedRows === 0) {
+    if (result.deletedCount === 0) {
       return NextResponse.json({ error: 'Highlight category not found' }, { status: 404 });
     }
 

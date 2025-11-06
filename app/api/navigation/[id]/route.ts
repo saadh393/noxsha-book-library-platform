@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { RowDataPacket } from 'mysql2/promise';
-import { execute, query } from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeNavLink } from '@/lib/serializers';
-
-type NavRow = RowDataPacket & Record<string, unknown>;
+import type { NavLinkDocument } from '@/lib/types';
 
 export async function PATCH(
   request: NextRequest,
@@ -18,35 +16,37 @@ export async function PATCH(
 
   const { id } = await context.params;
   const payload = await request.json();
-  const updates: string[] = [];
-  const values: Array<string | number> = [];
+  const updates: Partial<NavLinkDocument> = {};
 
   if (payload.label !== undefined) {
-    updates.push('label = ?');
-    values.push(payload.label);
+    updates.label = payload.label;
   }
   if (payload.href !== undefined) {
-    updates.push('href = ?');
-    values.push(payload.href);
+    updates.href = payload.href;
   }
   if (payload.display_order !== undefined) {
-    updates.push('display_order = ?');
-    values.push(Number(payload.display_order) || 0);
+    updates.display_order = Number(payload.display_order) || 0;
   }
 
-  if (updates.length === 0) {
+  if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'No fields provided' }, { status: 400 });
   }
 
   try {
-    await execute(`UPDATE nav_links SET ${updates.join(', ')} WHERE id = ?`, [...values, id]);
-    const rows = await query<NavRow[]>('SELECT * FROM nav_links WHERE id = ?', [id]);
+    const collection = await getCollection<NavLinkDocument>('nav_links');
+    const result = await collection.updateOne({ _id: id }, { $set: updates });
 
-    if (rows.length === 0) {
+    if (result.matchedCount === 0) {
       return NextResponse.json({ error: 'Navigation link not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ data: serializeNavLink(rows[0]) });
+    const updated = await collection.findOne({ _id: id });
+
+    if (!updated) {
+      return NextResponse.json({ error: 'Navigation link not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ data: serializeNavLink(updated) });
   } catch (error) {
     console.error('Error updating navigation link', error);
     return NextResponse.json({ error: 'Failed to update navigation link' }, { status: 500 });
@@ -66,9 +66,10 @@ export async function DELETE(
   const { id } = await context.params;
 
   try {
-    const result = await execute('DELETE FROM nav_links WHERE id = ?', [id]);
+    const collection = await getCollection<NavLinkDocument>('nav_links');
+    const result = await collection.deleteOne({ _id: id });
 
-    if (result.affectedRows === 0) {
+    if (result.deletedCount === 0) {
       return NextResponse.json({ error: 'Navigation link not found' }, { status: 404 });
     }
 
