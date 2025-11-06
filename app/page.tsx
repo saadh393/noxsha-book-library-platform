@@ -1,46 +1,16 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import HomeContent from '@/components/home/HomeContent';
+import { Suspense } from 'react';
+import HomePageClient from '@/components/home/HomePageClient';
 
 export default function HomePage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const searchParamValue = searchParams.get('search') ?? '';
-  const [searchQuery, setSearchQuery] = useState(searchParamValue);
-
-  useEffect(() => {
-    setSearchQuery(searchParamValue);
-  }, [searchParamValue]);
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    const nextPath = query ? `/?search=${encodeURIComponent(query)}` : '/';
-    router.replace(nextPath, { scroll: false });
-  };
-
-  const handleBookClick = (bookId: string) => {
-    router.push(`/books/${bookId}`);
-  };
-
-  const handleAdminNavigate = () => {
-    router.push('/admin/login');
-  };
-
   return (
-    <>
-      <Header
-        initialSearchQuery={searchQuery}
-        onSearch={handleSearch}
-        onAdminClick={handleAdminNavigate}
-      />
-      <main>
-        <HomeContent onBookClick={handleBookClick} searchQuery={searchQuery} />
-      </main>
-      <Footer />
-    </>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#FAF7FF] flex items-center justify-center">
+          <div className="w-12 h-12 border-4 border-[#884be3] border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <HomePageClient />
+    </Suspense>
   );
 }

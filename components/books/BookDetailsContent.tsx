@@ -293,33 +293,31 @@ export default function BookDetails({
                     transition={{ delay: 0.5 }}
                 >
                     <div className="flex gap-6 border-b border-gray-200 mb-6">
-                        {(["description", "reviews", "details"] as const).map(
-                            (tab) => (
-                                <motion.button
-                                    key={tab}
-                                    onClick={() => setSelectedTab(tab)}
-                                    className={`pb-4 px-2 font-semibold capitalize transition-colors relative ${
-                                        selectedTab === tab
-                                            ? "text-[#884be3]"
-                                            : "text-[#6B4BA8]"
-                                    }`}
-                                    whileHover={{ y: -2 }}
-                                >
-                                    {tabLabels[tab]}
-                                    {selectedTab === tab && (
-                                        <motion.div
-                                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#884be3]"
-                                            layoutId="activeTab"
-                                            transition={{
-                                                type: "spring",
-                                                stiffness: 300,
-                                                damping: 30,
-                                            }}
-                                        />
-                                    )}
-                                </motion.button>
-                            )
-                        )}
+                        {(["description", "details"] as const).map((tab) => (
+                            <motion.button
+                                key={tab}
+                                onClick={() => setSelectedTab(tab)}
+                                className={`pb-4 px-2 font-semibold capitalize transition-colors relative ${
+                                    selectedTab === tab
+                                        ? "text-[#884be3]"
+                                        : "text-[#6B4BA8]"
+                                }`}
+                                whileHover={{ y: -2 }}
+                            >
+                                {tabLabels[tab]}
+                                {selectedTab === tab && (
+                                    <motion.div
+                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#884be3]"
+                                        layoutId="activeTab"
+                                        transition={{
+                                            type: "spring",
+                                            stiffness: 300,
+                                            damping: 30,
+                                        }}
+                                    />
+                                )}
+                            </motion.button>
+                        ))}
                     </div>
 
                     <AnimatePresence mode="wait">
@@ -344,51 +342,7 @@ export default function BookDetails({
                                     </p>
                                 </div>
                             )}
-                            {selectedTab === "reviews" && (
-                                <div className="space-y-6">
-                                    {[1, 2, 3].map((i) => (
-                                        <motion.div
-                                            key={i}
-                                            className="border-b border-gray-100 pb-6 last:border-0"
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: i * 0.1 }}
-                                        >
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <div className="w-10 h-10 bg-[#884be3] rounded-full flex items-center justify-center text-white font-semibold">
-                                                    প{i.toLocaleString("bn-BD")}
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-semibold text-[#2D1B4E]">
-                                                        পাঠক{" "}
-                                                        {i.toLocaleString(
-                                                            "bn-BD"
-                                                        )}
-                                                    </h4>
-                                                    <div className="flex items-center gap-1">
-                                                        {[...Array(5)].map(
-                                                            (_, j) => (
-                                                                <Star
-                                                                    key={j}
-                                                                    size={14}
-                                                                    className="fill-[#F59E0B] text-[#F59E0B]"
-                                                                />
-                                                            )
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <p className="text-[#6B4BA8]">
-                                                দারুণ একটি পাঠানুভূতি! ব্যবহারিক
-                                                অন্তর্দৃষ্টি আর আকর্ষণীয়
-                                                উপস্থাপন পাঠকে মুগ্ধ করে। এই
-                                                বিষয়ে উন্নতি করতে ইচ্ছুক যে
-                                                কারও জন্য আন্তরিক সুপারিশ।
-                                            </p>
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            )}
+
                             {selectedTab === "details" && (
                                 <div className="grid grid-cols-2 gap-6">
                                     {[
