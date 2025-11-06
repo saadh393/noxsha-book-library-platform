@@ -15,7 +15,6 @@ type AdminPage =
     | "books"
     | "categories"
     | "hero"
-    | "reviews"
     | "social"
     | "downloads"
     | "contact";
