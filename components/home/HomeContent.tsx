@@ -6,7 +6,11 @@ import Hero from "../Hero";
 import BookSection from "../BookSection";
 import CategorySection from "../CategorySection";
 import Services from "../Services";
-import { fetchHomeBooks, fetchSiteSettings, searchBooks as searchBooksApi } from "@/lib/api";
+import {
+    fetchHomeBooks,
+    fetchSiteSettings,
+    searchBooks as searchBooksApi,
+} from "@/lib/api";
 import type { Book } from "@/lib/types";
 import { getBookImageUrl } from "@/lib/storage";
 
@@ -15,7 +19,10 @@ interface HomeContentProps {
     searchQuery: string;
 }
 
-export default function HomeContent({ onBookClick, searchQuery }: HomeContentProps) {
+export default function HomeContent({
+    onBookClick,
+    searchQuery,
+}: HomeContentProps) {
     const [recommendedBooks, setRecommendedBooks] = useState<Book[]>([]);
     const [recentBooks, setRecentBooks] = useState<Book[]>([]);
     const [bestsellerBooks, setBestsellerBooks] = useState<Book[]>([]);
@@ -23,10 +30,17 @@ export default function HomeContent({ onBookClick, searchQuery }: HomeContentPro
     const [searchResults, setSearchResults] = useState<Book[]>([]);
 
     const [searchTitle, setSearchTitle] = useState("অনুসন্ধানের ফলাফল");
-    const [searchEmptyTitle, setSearchEmptyTitle] = useState("কোনো বই পাওয়া যায়নি");
-    const [searchEmptyDescription, setSearchEmptyDescription] = useState("ভিন্ন কীওয়ার্ড দিয়ে আবার অনুসন্ধান করুন");
-    const [searchMetaSuffix, setSearchMetaSuffix] = useState("টি বই পাওয়া গেছে");
-    const [recommendedTitle, setRecommendedTitle] = useState("আপনার জন্য প্রস্তাবিত");
+    const [searchEmptyTitle, setSearchEmptyTitle] = useState(
+        "কোনো বই পাওয়া যায়নি"
+    );
+    const [searchEmptyDescription, setSearchEmptyDescription] = useState(
+        "ভিন্ন কীওয়ার্ড দিয়ে আবার অনুসন্ধান করুন"
+    );
+    const [searchMetaSuffix, setSearchMetaSuffix] =
+        useState("টি বই পাওয়া গেছে");
+    const [recommendedTitle, setRecommendedTitle] = useState(
+        "আপনার জন্য প্রস্তাবিত"
+    );
     const [recentTitle, setRecentTitle] = useState("সাম্প্রতিক সংযোজন");
     const [bestsellerTitle, setBestsellerTitle] = useState("সবচেয়ে জনপ্রিয়");
     const [popularTitle, setPopularTitle] = useState("এই মাসের জনপ্রিয়");
@@ -59,13 +73,20 @@ export default function HomeContent({ onBookClick, searchQuery }: HomeContentPro
             ]);
 
             if (data.home_search_title) setSearchTitle(data.home_search_title);
-            if (data.home_search_empty_title) setSearchEmptyTitle(data.home_search_empty_title);
-            if (data.home_search_empty_description) setSearchEmptyDescription(data.home_search_empty_description);
-            if (data.home_search_result_meta) setSearchMetaSuffix(data.home_search_result_meta);
-            if (data.home_section_recommended_title) setRecommendedTitle(data.home_section_recommended_title);
-            if (data.home_section_recent_title) setRecentTitle(data.home_section_recent_title);
-            if (data.home_section_bestseller_title) setBestsellerTitle(data.home_section_bestseller_title);
-            if (data.home_section_popular_title) setPopularTitle(data.home_section_popular_title);
+            if (data.home_search_empty_title)
+                setSearchEmptyTitle(data.home_search_empty_title);
+            if (data.home_search_empty_description)
+                setSearchEmptyDescription(data.home_search_empty_description);
+            if (data.home_search_result_meta)
+                setSearchMetaSuffix(data.home_search_result_meta);
+            if (data.home_section_recommended_title)
+                setRecommendedTitle(data.home_section_recommended_title);
+            if (data.home_section_recent_title)
+                setRecentTitle(data.home_section_recent_title);
+            if (data.home_section_bestseller_title)
+                setBestsellerTitle(data.home_section_bestseller_title);
+            if (data.home_section_popular_title)
+                setPopularTitle(data.home_section_popular_title);
         } catch (error) {
             console.error("Failed to load home page text", error);
         }
@@ -73,7 +94,8 @@ export default function HomeContent({ onBookClick, searchQuery }: HomeContentPro
 
     async function fetchBooks() {
         try {
-            const { recommended, recent, bestsellers, popular } = await fetchHomeBooks();
+            const { recommended, recent, bestsellers, popular } =
+                await fetchHomeBooks();
 
             setRecommendedBooks(recommended);
             setRecentBooks(recent);
@@ -95,7 +117,9 @@ export default function HomeContent({ onBookClick, searchQuery }: HomeContentPro
 
     const searchCountLabel = useMemo(() => {
         const suffix = searchMetaSuffix || "টি বই পাওয়া গেছে";
-        return `${searchResults.length.toLocaleString("bn-BD")} ${suffix}`.trim();
+        return `${searchResults.length.toLocaleString(
+            "bn-BD"
+        )} ${suffix}`.trim();
     }, [searchMetaSuffix, searchResults.length]);
 
     if (searchQuery && searchResults.length >= 0) {
@@ -131,7 +155,10 @@ export default function HomeContent({ onBookClick, searchQuery }: HomeContentPro
                                         <div className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-xl transition-shadow">
                                             <div className="relative mb-4 aspect-[3/4] bg-gray-100 rounded overflow-hidden">
                                                 <img
-                                                    src={getBookImageUrl(book, { width: 300, height: 400 })}
+                                                    src={getBookImageUrl(book, {
+                                                        width: 300,
+                                                        height: 400,
+                                                    })}
                                                     alt={book.title}
                                                     className="w-full h-full object-cover"
                                                 />
@@ -139,7 +166,9 @@ export default function HomeContent({ onBookClick, searchQuery }: HomeContentPro
                                             <h3 className="font-semibold text-[#2D1B4E] mb-1 line-clamp-2">
                                                 {book.title}
                                             </h3>
-                                            <p className="text-sm text-[#6B4BA8]">লেখক {book.author}</p>
+                                            <p className="text-sm text-[#6B4BA8]">
+                                                লেখক {book.author}
+                                            </p>
                                         </div>
                                     </div>
                                 </motion.div>
@@ -155,7 +184,9 @@ export default function HomeContent({ onBookClick, searchQuery }: HomeContentPro
                             <h3 className="text-2xl font-semibold text-[#2D1B4E] mb-2">
                                 {searchEmptyTitle}
                             </h3>
-                            <p className="text-[#6B4BA8]">{searchEmptyDescription}</p>
+                            <p className="text-[#6B4BA8]">
+                                {searchEmptyDescription}
+                            </p>
                         </motion.div>
                     )}
                 </div>
@@ -166,27 +197,17 @@ export default function HomeContent({ onBookClick, searchQuery }: HomeContentPro
     return (
         <>
             <Hero />
-            <BookSection
-                id="ebook"
-                title={recommendedTitle}
-                books={recommendedBooks}
-                onBookClick={onBookClick}
-            />
-            <CategorySection />
+
             <BookSection
                 title={recentTitle}
                 books={recentBooks}
                 onBookClick={onBookClick}
             />
+            <CategorySection />
+
             <BookSection
                 title={bestsellerTitle}
                 books={bestsellerBooks}
-                onBookClick={onBookClick}
-            />
-            <Services />
-            <BookSection
-                title={popularTitle}
-                books={popularBooks}
                 onBookClick={onBookClick}
             />
         </>
