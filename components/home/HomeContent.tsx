@@ -210,6 +210,11 @@ export default function HomeContent({
                 books={bestsellerBooks}
                 onBookClick={onBookClick}
             />
+            <BookSection
+                title={popularTitle}
+                books={popularBooks}
+                onBookClick={onBookClick}
+            />
         </>
     );
 }

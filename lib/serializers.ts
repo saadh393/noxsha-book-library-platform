@@ -7,6 +7,7 @@ import type {
   SiteSetting,
   SocialLink,
   Category,
+  Download,
 } from './types';
 
 type PrimitiveRow = Record<string, any>;
@@ -115,5 +116,18 @@ export function serializeCategory(row: PrimitiveRow): Category {
     created_at: toIsoString(row.created_at),
     updated_at: toIsoString(row.updated_at),
     book_count: row.book_count !== undefined ? Number(row.book_count) : undefined,
+  };
+}
+
+export function serializeDownload(row: PrimitiveRow): Download {
+  return {
+    id: row.id,
+    book_id: row.book_id,
+    book_title: typeof row.book_title === 'string' ? row.book_title : null,
+    name: row.name,
+    email: row.email,
+    phone: row.phone,
+    address: row.address,
+    created_at: toIsoString(row.created_at),
   };
 }

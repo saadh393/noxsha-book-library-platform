@@ -6,6 +6,7 @@ import type {
     Review,
     SocialLink,
     Category,
+    Download,
 } from "./types";
 
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -453,4 +454,13 @@ export async function deleteCategory(id: string) {
         credentials: "include",
     });
     return handleResponse<{ success: boolean }>(response);
+}
+
+export async function fetchDownloads() {
+    const response = await fetch("/api/downloads", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+    });
+    return handleResponse<{ data: Download[] }>(response);
 }

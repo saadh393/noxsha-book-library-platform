@@ -10,8 +10,9 @@ import AdminSettings from './AdminSettings';
 import AdminReviews from './AdminReviews';
 import AdminSocialLinks from './AdminSocialLinks';
 import AdminCategories from './AdminCategories';
+import AdminDownloads from './AdminDownloads';
 
-type AdminPage = 'books' | 'categories' | 'hero' | 'reviews' | 'social' | 'contact';
+type AdminPage = 'books' | 'categories' | 'hero' | 'reviews' | 'social' | 'downloads' | 'contact';
 
 interface AdminDashboardShellProps {
   onLogout: () => void;
@@ -38,6 +39,8 @@ export default function AdminDashboardShell({ onLogout }: AdminDashboardShellPro
         return <AdminReviews />;
       case 'social':
         return <AdminSocialLinks />;
+      case 'downloads':
+        return <AdminDownloads />;
       case 'contact':
         return (
           <div className="p-6">

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import type { Book } from '@/lib/types';
@@ -10,9 +11,14 @@ interface BookSectionProps {
   title: string;
   books: Book[];
   onBookClick: (bookId: string) => void;
+  filterType?: 'recommended' | 'recent' | 'bestseller' | 'popular';
 }
 
-export default function BookSection({ id, title, books, onBookClick }: BookSectionProps) {
+export default function BookSection({ id, title, books, onBookClick, filterType }: BookSectionProps) {
+  const targetHref = filterType
+    ? `/books?filter=${filterType}`
+    : `/books?section=${encodeURIComponent(title)}`;
+
   return (
     <section id={id} className="py-12">
       <div className="max-w-7xl mx-auto px-6">
@@ -23,13 +29,15 @@ export default function BookSection({ id, title, books, onBookClick }: BookSecti
           viewport={{ once: true }}
         >
           <h2 className="text-3xl font-serif text-[#2D1B4E]">{title}</h2>
-          <motion.button
-            className="flex items-center gap-2 text-[#6B4BA8] hover:text-[#884be3] transition-colors"
-            whileHover={{ x: 5 }}
-          >
-            সব দেখুন
-            <ArrowRight size={18} />
-          </motion.button>
+          <motion.div whileHover={{ x: 5 }}>
+            <Link
+              href={targetHref}
+              className="flex items-center gap-2 text-[#6B4BA8] hover:text-[#884be3] transition-colors"
+            >
+              সব দেখুন
+              <ArrowRight size={18} />
+            </Link>
+          </motion.div>
         </motion.div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">

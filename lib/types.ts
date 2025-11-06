@@ -77,6 +77,17 @@ export interface Category {
   book_count?: number;
 }
 
+export interface Download {
+  id: string;
+  book_id: string;
+  book_title: string | null;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  created_at: string;
+}
+
 export interface BookDocument {
   _id: string;
   id: string;
