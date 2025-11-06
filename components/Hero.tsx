@@ -25,11 +25,9 @@ const HERO_IMAGES = [
 ];
 
 export default function Hero() {
-    const [title, setTitle] = useState("আপনার পরবর্তী\nবইটি খুঁজে নিন");
-    const [subtitle, setSubtitle] = useState(
-        "প্রতিটি পাতায় অপেক্ষা করছে নতুন অভিযাত্রা। নোকশা আপনাকে অনুপ্রেরণাময় ডিজিটাল গল্পের নির্বাচিত বাছাই এনে দেয়।"
-    );
-    const [buttonLabel, setButtonLabel] = useState("এখনই ঘুরে দেখুন");
+    const [title, setTitle] = useState("");
+    const [subtitle, setSubtitle] = useState("");
+    const [buttonLabel, setButtonLabel] = useState("");
     const [highlights, setHighlights] =
         useState<HighlightItem[]>(DEFAULT_HIGHLIGHTS);
 
