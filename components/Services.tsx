@@ -1,16 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import {
-  ArrowRight,
-  Headphones,
-  LucideIcon,
-  Package,
-  Shield,
-  Truck,
-} from 'lucide-react';
-import { fetchHighlightServices, fetchSiteSettings } from '@/lib/api';
+import { ArrowRight, Headphones, LucideIcon, Package, Shield, Truck } from 'lucide-react';
 import type { HighlightService } from '@/lib/types';
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -20,46 +12,17 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Truck,
 };
 
-export default function Services() {
-  const [title, setTitle] = useState('কেন আমাদের বেছে নেবেন');
-  const [ctaLabel, setCtaLabel] = useState('সব দেখুন');
-  const [services, setServices] = useState<HighlightService[]>([]);
+interface ServicesProps {
+  title?: string;
+  ctaLabel?: string;
+  services?: HighlightService[];
+}
 
-  useEffect(() => {
-    let isMounted = true;
-
-    (async () => {
-      try {
-        const [settingsResponse, servicesResponse] = await Promise.all([
-          fetchSiteSettings(['services_section_title', 'services_section_cta_label']),
-          fetchHighlightServices(),
-        ]);
-
-        if (!isMounted) return;
-
-        const settings = settingsResponse.data;
-        if (settings.services_section_title) {
-          setTitle(settings.services_section_title);
-        }
-        if (settings.services_section_cta_label) {
-          setCtaLabel(settings.services_section_cta_label);
-        }
-
-        if (servicesResponse.data?.length) {
-          setServices(servicesResponse.data);
-        }
-      } catch (error) {
-        console.error('Failed to load services content', error);
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
+export default function Services({ title, ctaLabel, services }: ServicesProps) {
+  const resolvedTitle = title ?? 'কেন আমাদের বেছে নেবেন';
+  const resolvedCtaLabel = ctaLabel ?? 'সব দেখুন';
   const sortedServices = useMemo(
-    () => services.slice().sort((a, b) => a.display_order - b.display_order),
+    () => (services ?? []).slice().sort((a, b) => a.display_order - b.display_order),
     [services],
   );
 
@@ -74,12 +37,12 @@ export default function Services() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-3xl font-serif text-[#2D1B4E]">{title}</h2>
+          <h2 className="text-3xl font-serif text-[#2D1B4E]">{resolvedTitle}</h2>
           <motion.button
             className="flex items-center gap-2 text-[#6B4BA8] hover:text-[#884be3] transition-colors"
             whileHover={{ x: 5 }}
           >
-            {ctaLabel}
+            {resolvedCtaLabel}
             <ArrowRight size={18} />
           </motion.button>
         </motion.div>

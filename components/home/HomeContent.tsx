@@ -1,125 +1,97 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import BookSection from "../BookSection";
-import CategorySection from "../CategorySection";
-import Services from "../Services";
-import {
-    fetchHomeBooks,
-    fetchSiteSettings,
-    searchBooks as searchBooksApi,
-} from "@/lib/api";
-import type { Book } from "@/lib/types";
-import { getBookImageUrl } from "@/lib/storage";
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+import BookSection from '../BookSection';
+import CategorySection from '../CategorySection';
+import Services from '../Services';
+import { searchBooks as searchBooksApi } from '@/lib/api';
+import type { Book } from '@/lib/types';
+import { getBookImageUrl } from '@/lib/storage';
+import type {
+  CategorySectionContent,
+  HomeCopyContent,
+  HomeSectionsContent,
+  ServicesSectionContent,
+} from '@/lib/page-data';
 
 interface HomeContentProps {
     onBookClick: (bookId: string) => void;
     searchQuery: string;
+    initialSearchQuery?: string;
+    sections: HomeSectionsContent;
+    copy: HomeCopyContent;
+    categorySection: CategorySectionContent;
+    servicesSection: ServicesSectionContent;
+    initialSearchResults?: Book[];
+    hasServerSearchResults?: boolean;
 }
 
 export default function HomeContent({
     onBookClick,
     searchQuery,
+    initialSearchQuery,
+    sections,
+    copy,
+    categorySection,
+    servicesSection,
+    initialSearchResults,
+    hasServerSearchResults,
 }: HomeContentProps) {
-    const [recommendedBooks, setRecommendedBooks] = useState<Book[]>([]);
-    const [recentBooks, setRecentBooks] = useState<Book[]>([]);
-    const [bestsellerBooks, setBestsellerBooks] = useState<Book[]>([]);
-    const [popularBooks, setPopularBooks] = useState<Book[]>([]);
-    const [searchResults, setSearchResults] = useState<Book[]>([]);
-
-    const [searchTitle, setSearchTitle] = useState("অনুসন্ধানের ফলাফল");
-    const [searchEmptyTitle, setSearchEmptyTitle] = useState(
-        "কোনো বই পাওয়া যায়নি"
+    const [searchResults, setSearchResults] = useState<Book[]>(
+        initialSearchResults ?? []
     );
-    const [searchEmptyDescription, setSearchEmptyDescription] = useState(
-        "ভিন্ন কীওয়ার্ড দিয়ে আবার অনুসন্ধান করুন"
+    const skipQueryRef = useRef(
+        hasServerSearchResults && initialSearchQuery ? initialSearchQuery : ""
     );
-    const [searchMetaSuffix, setSearchMetaSuffix] =
-        useState("টি বই পাওয়া গেছে");
-    const [recommendedTitle, setRecommendedTitle] = useState(
-        "আপনার জন্য প্রস্তাবিত"
-    );
-    const [recentTitle, setRecentTitle] = useState("সাম্প্রতিক সংযোজন");
-    const [bestsellerTitle, setBestsellerTitle] = useState("সবচেয়ে জনপ্রিয়");
-    const [popularTitle, setPopularTitle] = useState("এই মাসের জনপ্রিয়");
 
     useEffect(() => {
-        fetchBooks();
-        loadCopy();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    useEffect(() => {
-        if (searchQuery) {
-            searchBooks(searchQuery);
-        } else {
-            setSearchResults([]);
+        if (hasServerSearchResults && typeof initialSearchQuery === "string") {
+            setSearchResults(initialSearchResults ?? []);
+            skipQueryRef.current = initialSearchQuery;
         }
+    }, [
+        hasServerSearchResults,
+        initialSearchQuery,
+        initialSearchResults,
+    ]);
+
+    useEffect(() => {
+        if (!searchQuery) {
+            setSearchResults([]);
+            skipQueryRef.current = "";
+            return;
+        }
+
+        if (skipQueryRef.current && searchQuery === skipQueryRef.current) {
+            skipQueryRef.current = "";
+            return;
+        }
+
+        let cancelled = false;
+
+        (async () => {
+            try {
+                const { data } = await searchBooksApi(searchQuery);
+                if (!cancelled) {
+                    setSearchResults(data || []);
+                }
+            } catch (error) {
+                console.error("Failed to search books", error);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
     }, [searchQuery]);
 
-    async function loadCopy() {
-        try {
-            const { data } = await fetchSiteSettings([
-                "home_search_title",
-                "home_search_empty_title",
-                "home_search_empty_description",
-                "home_search_result_meta",
-                "home_section_recommended_title",
-                "home_section_recent_title",
-                "home_section_bestseller_title",
-                "home_section_popular_title",
-            ]);
-
-            if (data.home_search_title) setSearchTitle(data.home_search_title);
-            if (data.home_search_empty_title)
-                setSearchEmptyTitle(data.home_search_empty_title);
-            if (data.home_search_empty_description)
-                setSearchEmptyDescription(data.home_search_empty_description);
-            if (data.home_search_result_meta)
-                setSearchMetaSuffix(data.home_search_result_meta);
-            if (data.home_section_recommended_title)
-                setRecommendedTitle(data.home_section_recommended_title);
-            if (data.home_section_recent_title)
-                setRecentTitle(data.home_section_recent_title);
-            if (data.home_section_bestseller_title)
-                setBestsellerTitle(data.home_section_bestseller_title);
-            if (data.home_section_popular_title)
-                setPopularTitle(data.home_section_popular_title);
-        } catch (error) {
-            console.error("Failed to load home page text", error);
-        }
-    }
-
-    async function fetchBooks() {
-        try {
-            const { recommended, recent, bestsellers, popular } =
-                await fetchHomeBooks();
-
-            setRecommendedBooks(recommended);
-            setRecentBooks(recent);
-            setBestsellerBooks(bestsellers);
-            setPopularBooks(popular);
-        } catch (error) {
-            console.error("Failed to load books", error);
-        }
-    }
-
-    async function searchBooks(query: string) {
-        try {
-            const { data } = await searchBooksApi(query);
-            setSearchResults(data || []);
-        } catch (error) {
-            console.error("Failed to search books", error);
-        }
-    }
-
     const searchCountLabel = useMemo(() => {
-        const suffix = searchMetaSuffix || "টি বই পাওয়া গেছে";
+        const suffix = copy.searchMetaSuffix || "টি বই পাওয়া গেছে";
         return `${searchResults.length.toLocaleString(
             "bn-BD"
         )} ${suffix}`.trim();
-    }, [searchMetaSuffix, searchResults.length]);
+    }, [copy.searchMetaSuffix, searchResults.length]);
 
     if (searchQuery && searchResults.length >= 0) {
         return (
@@ -130,7 +102,7 @@ export default function HomeContent({
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                     >
-                        {searchTitle}
+                        {copy.searchTitle}
                     </motion.h2>
                     <motion.p
                         className="text-[#6B4BA8] mb-8"
@@ -181,10 +153,10 @@ export default function HomeContent({
                         >
                             <div className="text-6xl mb-4">📚</div>
                             <h3 className="text-2xl font-semibold text-[#2D1B4E] mb-2">
-                                {searchEmptyTitle}
+                        {copy.searchEmptyTitle}
                             </h3>
                             <p className="text-[#6B4BA8]">
-                                {searchEmptyDescription}
+                                {copy.searchEmptyDescription}
                             </p>
                         </motion.div>
                     )}
@@ -195,41 +167,51 @@ export default function HomeContent({
 
     return (
         <>
-            {recommendedBooks.length > 0 && (
+            {sections.recommended.length > 0 && (
                 <BookSection
-                    title={recommendedTitle}
-                    books={recommendedBooks}
+                    title={copy.recommendedTitle}
+                    books={sections.recommended}
                     onBookClick={onBookClick}
                     filterType="recommended"
                 />
             )}
-            {recentBooks.length > 0 && (
+            {sections.recent.length > 0 && (
                 <BookSection
-                    title={recentTitle}
-                    books={recentBooks}
+                    title={copy.recentTitle}
+                    books={sections.recent}
                     onBookClick={onBookClick}
                     filterType="recent"
                 />
             )}
-            <CategorySection />
+            <CategorySection
+                title={categorySection.title}
+                ctaLabel={categorySection.ctaLabel}
+                categories={categorySection.categories}
+            />
 
-            {popularBooks.length > 0 && (
+            {sections.popular.length > 0 && (
                 <BookSection
-                    title={popularTitle}
-                    books={popularBooks}
+                    title={copy.popularTitle}
+                    books={sections.popular}
                     onBookClick={onBookClick}
                     filterType="popular"
                 />
             )}
 
-            {bestsellerBooks.length > 0 && (
+            {sections.bestsellers.length > 0 && (
                 <BookSection
-                    title={bestsellerTitle}
-                    books={bestsellerBooks}
+                    title={copy.bestsellerTitle}
+                    books={sections.bestsellers}
                     onBookClick={onBookClick}
                     filterType="bestseller"
                 />
             )}
+
+            <Services
+                title={servicesSection.title}
+                ctaLabel={servicesSection.ctaLabel}
+                services={servicesSection.services}
+            />
         </>
     );
 }

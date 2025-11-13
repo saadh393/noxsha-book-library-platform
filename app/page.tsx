@@ -1,19 +1,56 @@
-import { Suspense } from "react";
 import HomePageClient from "@/components/home/HomePageClient";
 import { getHeroContent } from "@/lib/site-content";
+import {
+    getCategorySectionContent,
+    getFooterContent,
+    getHeaderContent,
+    getHomeCopyContent,
+    getHomeSectionsContent,
+    getServicesSectionContent,
+    searchBooksByQuery,
+} from "@/lib/page-data.server";
 
-export default async function HomePage() {
-    const heroContent = await getHeroContent();
+type HomePageProps = {
+    searchParams?: { search?: string };
+};
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+    const searchParamValue =
+        typeof searchParams?.search === "string" ? searchParams.search : "";
+    const searchQuery = searchParamValue.trim();
+
+    const [
+        heroContent,
+        headerContent,
+        footerContent,
+        sections,
+        copy,
+        categorySection,
+        servicesSection,
+        initialSearchResults,
+    ] = await Promise.all([
+        getHeroContent(),
+        getHeaderContent(),
+        getFooterContent(),
+        getHomeSectionsContent(),
+        getHomeCopyContent(),
+        getCategorySectionContent(),
+        getServicesSectionContent(),
+        searchQuery ? searchBooksByQuery(searchQuery) : Promise.resolve([]),
+    ]);
 
     return (
-        <Suspense
-            fallback={
-                <div className="min-h-screen bg-[#FAF7FF] flex items-center justify-center">
-                    <div className="w-12 h-12 border-4 border-[#884be3] border-t-transparent rounded-full animate-spin" />
-                </div>
-            }
-        >
-            <HomePageClient heroContent={heroContent} />
-        </Suspense>
+        <HomePageClient
+            heroContent={heroContent}
+            headerContent={headerContent}
+            footerContent={footerContent}
+            sections={sections}
+            copy={copy}
+            categorySection={categorySection}
+            servicesSection={servicesSection}
+            initialSearchQuery={searchQuery}
+            initialSearchResults={initialSearchResults}
+            hasServerSearchResults={Boolean(searchQuery)}
+        />
     );
 }

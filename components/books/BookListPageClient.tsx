@@ -7,15 +7,25 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import BookCard from '@/components/BookCard';
 import type { Book } from '@/lib/types';
+import type { FooterContent, HeaderContent } from '@/lib/page-data';
 
 interface BookListPageClientProps {
   title: string;
   subtitle: string;
   books: Book[];
   filter: string;
+  headerContent: HeaderContent;
+  footerContent: FooterContent;
 }
 
-export default function BookListPageClient({ title, subtitle, books, filter }: BookListPageClientProps) {
+export default function BookListPageClient({
+  title,
+  subtitle,
+  books,
+  filter,
+  headerContent,
+  footerContent,
+}: BookListPageClientProps) {
   const router = useRouter();
 
   const handleSearch = useCallback(
@@ -39,7 +49,14 @@ export default function BookListPageClient({ title, subtitle, books, filter }: B
 
   return (
     <>
-      <Header onSearch={handleSearch} onAdminClick={() => router.push('/admin/login')} />
+      <Header
+        onSearch={handleSearch}
+        onAdminClick={() => router.push('/admin/login')}
+        logoText={headerContent.logoText}
+        searchPlaceholder={headerContent.searchPlaceholder}
+        adminTooltip={headerContent.adminTooltip}
+        navItems={headerContent.navItems}
+      />
       <main className="bg-[#FAF7FF] py-12 min-h-screen">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-10">
@@ -85,7 +102,14 @@ export default function BookListPageClient({ title, subtitle, books, filter }: B
           )}
         </div>
       </main>
-      <Footer />
+      <Footer
+        companyName={footerContent.companyName}
+        description={footerContent.description}
+        quickLinks={footerContent.quickLinks}
+        contactLinks={footerContent.contactLinks}
+        bottomText={footerContent.bottomText}
+        socialLinks={footerContent.socialLinks}
+      />
     </>
   );
 }

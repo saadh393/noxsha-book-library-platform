@@ -5,6 +5,7 @@ import BookDetailsPageClient from "@/components/books/BookDetailsPageClient";
 import { getCollection } from "@/lib/db";
 import { serializeBook } from "@/lib/serializers";
 import type { Book, BookDocument } from "@/lib/types";
+import { getFooterContent, getHeaderContent } from "@/lib/page-data.server";
 
 const getBookData = cache(async (id: string) => {
     const collection = await getCollection<BookDocument>("books");
@@ -83,13 +84,22 @@ export async function generateMetadata({
 
 export default async function BookDetailsPage({ params }: PageParams) {
     const { id } = await params;
-    const data = await getBookData(id);
-
-    console.log("BookDetailsPage data:", data);
+    const [data, headerContent, footerContent] = await Promise.all([
+        getBookData(id),
+        getHeaderContent(),
+        getFooterContent(),
+    ]);
 
     if (!data) {
         notFound();
     }
 
-    return <BookDetailsPageClient book={data.book} related={data.related} />;
+    return (
+        <BookDetailsPageClient
+            book={data.book}
+            related={data.related}
+            headerContent={headerContent}
+            footerContent={footerContent}
+        />
+    );
 }

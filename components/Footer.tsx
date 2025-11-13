@@ -1,17 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import * as LucideIcons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { fetchActiveSocialLinks, fetchSiteSettings } from "@/lib/api";
 import type { SocialLink } from "@/lib/types";
 import Image from "next/image";
-
-interface FooterLinkItem {
-    label: string;
-    href?: string;
-}
+import type { FooterLinkItem } from "@/lib/page-data";
 
 function normalizeIconName(value: string) {
     if (!value) return "";
@@ -42,109 +37,52 @@ function resolveIcon(name: string): LucideIcon {
     ) as LucideIcon;
 }
 
-export default function Footer() {
-    const [companyName, setCompanyName] = useState("নোকশা");
-    const [description, setDescription] = useState(
-        "বাছাইকৃত ই-বুকের বিনামূল্যের সংগ্রহশালা। জ্ঞান অন্বেষণে কোনো সীমানা নেই।"
+interface FooterProps {
+    companyName?: string;
+    description?: string;
+    quickLinks?: FooterLinkItem[];
+    contactLinks?: FooterLinkItem[];
+    bottomText?: string;
+    socialLinks?: SocialLink[];
+}
+
+export default function Footer({
+    companyName,
+    description,
+    quickLinks,
+    contactLinks,
+    bottomText,
+    socialLinks,
+}: FooterProps) {
+    const resolvedCompanyName = companyName ?? "নোকশা";
+    const resolvedDescription =
+        description ??
+        "বাছাইকৃত ই-বুকের বিনামূল্যের সংগ্রহশালা। জ্ঞান অন্বেষণে কোনো সীমানা নেই।";
+    const resolvedBottomText =
+        bottomText ?? "স্বত্ব © ২০২৫ নোকশা। সর্বস্বত্ব সংরক্ষিত।";
+    const resolvedQuickLinks = quickLinks ?? [];
+    const resolvedContactLinks = contactLinks ?? [];
+    const resolvedSocialLinks = (socialLinks ?? []).filter(
+        (link) => link.platform?.length && link.url?.length
     );
-    const [quickLinks, setQuickLinks] = useState<FooterLinkItem[]>([]);
-    const [contactLinks, setContactLinks] = useState<FooterLinkItem[]>([]);
-    const [bottomText, setBottomText] = useState(
-        "স্বত্ব © ২০২৫ নোকশা। সর্বস্বত্ব সংরক্ষিত।"
-    );
-    const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
-
-    useEffect(() => {
-        let isMounted = true;
-
-        (async () => {
-            try {
-                const [settingsResponse, socialResponse] = await Promise.all([
-                    fetchSiteSettings([
-                        "footer_company_name",
-                        "footer_description",
-                        "footer_quick_links",
-                        "footer_contact_links",
-                        "footer_bottom_text",
-                    ]),
-                    fetchActiveSocialLinks(),
-                ]);
-
-                if (!isMounted) return;
-
-                const settings = settingsResponse.data;
-                if (settings.footer_company_name) {
-                    setCompanyName(settings.footer_company_name);
-                }
-                if (settings.footer_description) {
-                    setDescription(settings.footer_description);
-                }
-                if (settings.footer_quick_links) {
-                    try {
-                        const parsed = JSON.parse(
-                            settings.footer_quick_links
-                        ) as FooterLinkItem[];
-                        if (Array.isArray(parsed)) {
-                            setQuickLinks(parsed);
-                        }
-                    } catch (error) {
-                        console.warn(
-                            "Failed to parse footer_quick_links",
-                            error
-                        );
-                    }
-                }
-                if (settings.footer_contact_links) {
-                    try {
-                        const parsed = JSON.parse(
-                            settings.footer_contact_links
-                        ) as FooterLinkItem[];
-                        if (Array.isArray(parsed)) {
-                            setContactLinks(parsed);
-                        }
-                    } catch (error) {
-                        console.warn(
-                            "Failed to parse footer_contact_links",
-                            error
-                        );
-                    }
-                }
-                if (settings.footer_bottom_text) {
-                    setBottomText(settings.footer_bottom_text);
-                }
-
-                if (socialResponse.data?.length) {
-                    setSocialLinks(
-                        socialResponse.data.filter((link) => link.is_active)
-                    );
-                }
-            } catch (error) {
-                console.error("Failed to load footer content", error);
-            }
-        })();
-
-        return () => {
-            isMounted = false;
-        };
-    }, []);
 
     const normalizedQuickLinks = useMemo(
-        () => quickLinks.filter((item) => item.label?.length),
-        [quickLinks]
+        () =>
+            resolvedQuickLinks.filter((item) => item.label?.trim?.().length),
+        [resolvedQuickLinks]
     );
     const normalizedContactLinks = useMemo(
-        () => contactLinks.filter((item) => item.label?.length),
-        [contactLinks]
+        () =>
+            resolvedContactLinks.filter((item) => item.label?.trim?.().length),
+        [resolvedContactLinks]
     );
     const socialLinkItems = useMemo<FooterLinkItem[]>(
         () =>
-            socialLinks
-                .filter((link) => link.platform?.length && link.url?.length)
-                .map((link) => ({
-                    label: link.platform,
-                    href: link.url,
-                })),
-        [socialLinks]
+            resolvedSocialLinks.map((link) => ({
+                label: link.platform,
+                href: link.url,
+            })),
+        [resolvedSocialLinks]
     );
     const contactSectionItems = normalizedContactLinks;
 
@@ -162,14 +100,14 @@ export default function Footer() {
                                 src={"/logo.png"}
                                 height={80}
                                 width={100}
-                                alt="Noxsha"
+                                alt={resolvedCompanyName}
                             />
                         </h3>
                         <p className="text-[#6B4BA8] text-sm mb-4">
-                            {description}
+                            {resolvedDescription}
                         </p>
                         <div className="flex gap-3">
-                            {socialLinks.map((link) => {
+                            {resolvedSocialLinks.map((link) => {
                                 const Icon = resolveIcon(
                                     normalizeIconName(link.icon_name)
                                 );
@@ -232,7 +170,7 @@ export default function Footer() {
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
                 >
-                    {bottomText}
+                    {resolvedBottomText}
                 </motion.div>
             </div>
         </footer>

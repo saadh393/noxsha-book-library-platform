@@ -1,12 +1,17 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
-import * as LucideIcons from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { fetchCategories, fetchSiteSettings } from "@/lib/api";
-import type { Category } from "@/lib/types";
+import { useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import type { Category } from '@/lib/types';
+
+interface CategorySectionProps {
+  title?: string;
+  ctaLabel?: string;
+  categories?: Category[];
+}
 
 function normalizeIconName(value: string) {
     if (!value) return "";
@@ -36,55 +41,20 @@ function resolveIcon(name: string): LucideIcon {
     return (typeof fallback === "object" ? fallback : () => null) as LucideIcon;
 }
 
-export default function CategorySection() {
-    const [title, setTitle] = useState("ক্যাটেগরি");
-    const [ctaLabel, setCtaLabel] = useState("সব দেখুন");
-    const [categories, setCategories] = useState<Category[]>([]);
-
-    useEffect(() => {
-        let isMounted = true;
-
-        (async () => {
-            try {
-                const [settingsResponse, categoriesResponse] =
-                    await Promise.all([
-                        fetchSiteSettings([
-                            "category_section_title",
-                            "category_section_cta_label",
-                        ]),
-                        fetchCategories(),
-                    ]);
-
-                if (!isMounted) return;
-
-                const settings = settingsResponse.data;
-                if (settings.category_section_title) {
-                    setTitle(settings.category_section_title);
-                }
-                if (settings.category_section_cta_label) {
-                    setCtaLabel(settings.category_section_cta_label);
-                }
-
-                if (categoriesResponse.data?.length) {
-                    setCategories(categoriesResponse.data);
-                }
-            } catch (error) {
-                console.error("Failed to load category section content", error);
-            }
-        })();
-
-        return () => {
-            isMounted = false;
-        };
-    }, []);
-
-    const sortedCategories = useMemo(
-        () =>
-            categories
-                .slice()
-                .sort((a, b) => a.name.localeCompare(b.name, "en")),
-        [categories]
-    );
+export default function CategorySection({
+  title,
+  ctaLabel,
+  categories,
+}: CategorySectionProps) {
+  const resolvedTitle = title ?? 'ক্যাটেগরি';
+  const resolvedCtaLabel = ctaLabel ?? 'সব দেখুন';
+  const sortedCategories = useMemo(
+    () =>
+      (categories ?? [])
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name, 'bn-BD')),
+    [categories],
+  );
 
     return (
         <section className="py-12 bg-white">
@@ -96,13 +66,13 @@ export default function CategorySection() {
                     viewport={{ once: true }}
                 >
                     <h2 className="text-3xl font-serif text-[#2D1B4E]">
-                        {title}
+                        {resolvedTitle}
                     </h2>
                     <motion.button
                         className="hidden items-center gap-2 text-[#6B4BA8] hover:text-[#884be3] transition-colors"
                         whileHover={{ x: 5 }}
                     >
-                        {ctaLabel}
+                        {resolvedCtaLabel}
                         <ArrowRight size={18} />
                     </motion.button>
                 </motion.div>

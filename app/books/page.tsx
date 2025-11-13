@@ -4,6 +4,7 @@ import BookListPageClient from '@/components/books/BookListPageClient';
 import { getCollection } from '@/lib/db';
 import { serializeBook } from '@/lib/serializers';
 import type { Book, BookDocument, SiteSettingDocument } from '@/lib/types';
+import { getFooterContent, getHeaderContent } from '@/lib/page-data.server';
 
 type BookFilter = 'recommended' | 'recent' | 'bestseller' | 'popular';
 
@@ -161,8 +162,22 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
 export default async function BooksIndexPage({ searchParams }: PageProps) {
   const filter = resolveFilter(searchParams);
-  const [books, title] = await Promise.all([fetchBooks(filter), getSectionTitle(filter)]);
+  const [books, title, headerContent, footerContent] = await Promise.all([
+    fetchBooks(filter),
+    getSectionTitle(filter),
+    getHeaderContent(),
+    getFooterContent(),
+  ]);
   const subtitle = DEFAULT_SUBTITLES[filter];
 
-  return <BookListPageClient filter={filter} books={books} title={title} subtitle={subtitle} />;
+  return (
+    <BookListPageClient
+      filter={filter}
+      books={books}
+      title={title}
+      subtitle={subtitle}
+      headerContent={headerContent}
+      footerContent={footerContent}
+    />
+  );
 }
