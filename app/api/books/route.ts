@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCollection } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth-server";
 import { serializeBook } from "@/lib/serializers";
-import type { Book, BookDocument, CategoryDonpcument } from "@/lib/types";
+import type { Book, BookDocument, CategoryDocument } from "@/lib/types";
 import { revalidateBookPages } from "@/lib/revalidate";
 
 export async function GET() {
