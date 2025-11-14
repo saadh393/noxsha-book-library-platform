@@ -197,3 +197,30 @@ export interface DownloadDocument {
   address: string;
   created_at: Date;
 }
+
+export type BkashPaymentStatus =
+  | 'initiated'
+  | 'create_failed'
+  | 'pending_execution'
+  | 'executed'
+  | 'failed'
+  | 'cancelled';
+
+export interface BkashPaymentDocument {
+  _id: string;
+  payment_id: string | null;
+  book_id: string;
+  book_title: string | null;
+  invoice: string;
+  amount: number;
+  currency: string;
+  status: BkashPaymentStatus;
+  bkash_trx_id: string | null;
+  customer_msisdn: string | null;
+  payer_reference: string | null;
+  bkash_error_code?: string | null;
+  bkash_error_message?: string | null;
+  metadata?: Record<string, any>;
+  created_at: Date;
+  updated_at: Date;
+}

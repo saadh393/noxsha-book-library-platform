@@ -285,6 +285,19 @@ export async function requestBookDownload(bookId: string) {
     return handleResponse<{ downloadUrl: string }>(response);
 }
 
+export async function startBkashPayment(bookId: string) {
+    const response = await fetch("/api/payments/bkash/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookId }),
+    });
+    return handleResponse<{
+        redirectUrl: string;
+        paymentID: string;
+        invoice: string;
+    }>(response);
+}
+
 export async function fetchNavLinks() {
     const response = await fetch("/api/navigation", {
         cache: "no-store",

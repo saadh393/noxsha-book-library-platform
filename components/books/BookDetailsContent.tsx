@@ -1,11 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Star, Download, Share2, TrendingUp } from "lucide-react";
+import {
+    ArrowLeft,
+    Star,
+    Download,
+    Share2,
+    TrendingUp,
+    Loader2,
+} from "lucide-react";
 import BookCard from "../BookCard";
 import DownloadModal from "../DownloadModal";
-import { fetchBookDetails } from "@/lib/api";
+import {
+    fetchBookDetails,
+    requestBookDownload,
+    startBkashPayment,
+} from "@/lib/api";
 import type { Book } from "@/lib/types";
 import { getBookImageUrl } from "@/lib/storage";
 import { formatCurrency, isFreePrice } from "@/lib/price";
@@ -27,14 +39,95 @@ export default function BookDetails({
     initialBook = null,
     initialRelated = [],
 }: BookDetailsProps) {
+    const searchParams = useSearchParams();
     const [book, setBook] = useState<Book | null>(initialBook);
     const [relatedBooks, setRelatedBooks] = useState<Book[]>(initialRelated);
     const [selectedTab, setSelectedTab] = useState<TabKey>("description");
     const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+    const [isStartingPayment, setIsStartingPayment] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
+    const [paymentError, setPaymentError] = useState<string | null>(null);
+    const [handledQuerySignature, setHandledQuerySignature] = useState<
+        string | null
+    >(null);
+    const [hasUnlockedPaidBook, setHasUnlockedPaidBook] = useState(false);
+    const PAID_BOOK_STORAGE_KEY = "noxsha_paid_books";
     const tabLabels: Record<TabKey, string> = {
         description: "বর্ণনা",
         details: "বিস্তারিত",
     };
+    const isFreeBook = useMemo(
+        () => (book ? isFreePrice(book.price) : false),
+        [book]
+    );
+
+    const readPaidBookCache = useCallback(() => {
+        if (typeof window === "undefined") {
+            return {};
+        }
+        try {
+            const raw = window.localStorage.getItem(PAID_BOOK_STORAGE_KEY);
+            return raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+        } catch (error) {
+            console.error("Failed to read paid book cache", error);
+            return {};
+        }
+    }, []);
+
+    const rememberPaidBook = useCallback(
+        (bookId: string, paymentID?: string | null) => {
+            if (typeof window === "undefined") return;
+            try {
+                const cache = readPaidBookCache();
+                cache[bookId] = {
+                    unlockedAt: new Date().toISOString(),
+                    paymentID: paymentID ?? null,
+                };
+                window.localStorage.setItem(
+                    PAID_BOOK_STORAGE_KEY,
+                    JSON.stringify(cache)
+                );
+                setHasUnlockedPaidBook(true);
+            } catch (error) {
+                console.error("Failed to persist paid book cache", error);
+            }
+        },
+        [readPaidBookCache]
+    );
+
+    const hasPaidAccess = useCallback(
+        (targetBookId: string) => {
+            const cache = readPaidBookCache();
+            return Boolean(cache[targetBookId]);
+        },
+        [readPaidBookCache]
+    );
+
+    const clearPaymentParams = useCallback(() => {
+        if (typeof window === "undefined") return;
+        const url = new URL(window.location.href);
+        url.searchParams.delete("paymentStatus");
+        url.searchParams.delete("paymentID");
+        url.searchParams.delete("reason");
+        window.history.replaceState({}, document.title, url.toString());
+    }, []);
+
+    const handleDirectDownload = useCallback(async () => {
+        if (!book) return;
+        setPaymentError(null);
+        setIsDownloading(true);
+        try {
+            const { downloadUrl } = await requestBookDownload(book.id);
+            window.open(downloadUrl, "_blank", "noopener");
+        } catch (error) {
+            console.error("Failed to open download link", error);
+            setPaymentError(
+                "ডাউনলোড লিংক খুলতে পারিনি। পরে আবার চেষ্টা করুন।"
+            );
+        } finally {
+            setIsDownloading(false);
+        }
+    }, [book]);
 
     useEffect(() => {
         let isMounted = true;
@@ -68,6 +161,49 @@ export default function BookDetails({
         };
     }, [bookId, initialBook?.id]);
 
+    useEffect(() => {
+        if (!book) return;
+        setHasUnlockedPaidBook(hasPaidAccess(book.id));
+    }, [book, hasPaidAccess]);
+
+    useEffect(() => {
+        if (!book) return;
+        const status = searchParams.get("paymentStatus");
+        const paymentId = searchParams.get("paymentID");
+
+        if (!status) {
+            setHandledQuerySignature(null);
+            return;
+        }
+
+        const signature = `${status}:${paymentId ?? ""}:${book.id}`;
+        if (handledQuerySignature === signature) {
+            return;
+        }
+
+        if (status === "success") {
+            setHandledQuerySignature(signature);
+            rememberPaidBook(book.id, paymentId);
+            handleDirectDownload();
+            clearPaymentParams();
+        } else if (status === "failed" || status === "cancelled") {
+            setHandledQuerySignature(signature);
+            setPaymentError(
+                status === "failed"
+                    ? "পেমেন্ট সম্পন্ন করা যায়নি। আবার চেষ্টা করুন।"
+                    : "আপনি পেমেন্ট প্রক্রিয়া বাতিল করেছেন।"
+            );
+            clearPaymentParams();
+        }
+    }, [
+        book,
+        searchParams,
+        handledQuerySignature,
+        rememberPaidBook,
+        handleDirectDownload,
+        clearPaymentParams,
+    ]);
+
     if (!book) {
         return (
             <div className="min-h-screen bg-[#FAF7FF] flex items-center justify-center">
@@ -76,12 +212,11 @@ export default function BookDetails({
         );
     }
 
-    const freeBook = isFreePrice(book.price);
     const hasDiscount =
-        !freeBook &&
+        !isFreeBook &&
         typeof book.old_price === "number" &&
         book.old_price > book.price;
-    const priceLabel = freeBook
+    const priceLabel = isFreeBook
         ? "বিনামূল্যে"
         : formatCurrency(Number(book.price) || 0);
     const oldPriceLabel =
@@ -297,13 +432,61 @@ export default function BookDetails({
                             transition={{ delay: 1.0 }}
                         >
                             <motion.button
-                                onClick={() => setIsDownloadModalOpen(true)}
-                                className="flex-1 bg-gradient-to-r from-[#884be3] to-[#6B4BA8] text-white px-8 py-4 rounded-lg hover:shadow-xl transition-shadow font-semibold flex items-center justify-center gap-2"
+                                onClick={async () => {
+                                    if (isFreeBook) {
+                                        setIsDownloadModalOpen(true);
+                                        return;
+                                    }
+                                    if (hasUnlockedPaidBook) {
+                                        handleDirectDownload();
+                                        return;
+                                    }
+                                    if (!book) return;
+                                    setPaymentError(null);
+                                    setIsStartingPayment(true);
+                                    try {
+                                        const { redirectUrl } =
+                                            await startBkashPayment(book.id);
+                                        window.location.href = redirectUrl;
+                                    } catch (error) {
+                                        console.error(
+                                            "Failed to start bKash payment",
+                                            error
+                                        );
+                                        setPaymentError(
+                                            error instanceof Error
+                                                ? error.message
+                                                : "bKash পেমেন্ট শুরু করা যায়নি।"
+                                        );
+                                    } finally {
+                                        setIsStartingPayment(false);
+                                    }
+                                }}
+                                disabled={isStartingPayment || isDownloading}
+                                className="flex-1 bg-gradient-to-r from-[#884be3] to-[#6B4BA8] text-white px-8 py-4 rounded-lg hover:shadow-xl transition-shadow font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
                                 whileHover={{ scale: 1.02, y: -2 }}
                                 whileTap={{ scale: 0.98 }}
                             >
-                                <Download size={20} />
-                                ই-বুক ডাউনলোড করুন
+                                {isStartingPayment || isDownloading ? (
+                                    <>
+                                        <Loader2
+                                            className="animate-spin"
+                                            size={20}
+                                        />
+                                        {isFreeBook
+                                            ? "প্রসেসিং..."
+                                            : "bKash প্রসেস হচ্ছে"}
+                                    </>
+                                ) : (
+                                    <>
+                                        <Download size={20} />
+                                        {isFreeBook
+                                            ? "ই-বুক ডাউনলোড করুন"
+                                            : hasUnlockedPaidBook
+                                            ? "আবার ডাউনলোড করুন"
+                                            : "bKash দিয়ে পেমেন্ট করুন"}
+                                    </>
+                                )}
                             </motion.button>
 
                             <motion.button
@@ -315,16 +498,39 @@ export default function BookDetails({
                             </motion.button>
                         </motion.div>
 
-                        <motion.p
-                            className="text-sm text-[#6B4BA8] text-center"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 1.1 }}
-                        >
-                            {freeBook
-                                ? "বিনামূল্যে ডাউনলোড। কোনো অর্থপ্রদান প্রয়োজন নেই।"
-                                : "বইটি ডাউনলোড করার আগে মূল্য নিশ্চিত করুন। ডিসকাউন্ট দ্রুত পরিবর্তিত হতে পারে।"}
-                        </motion.p>
+                        <div className="flex flex-col gap-2 text-center">
+                            {paymentError && (
+                                <motion.p
+                                    className="text-sm text-red-600"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                >
+                                    {paymentError}
+                                </motion.p>
+                            )}
+                            {!isFreeBook &&
+                                hasUnlockedPaidBook &&
+                                !paymentError && (
+                                    <motion.p
+                                        className="text-sm text-green-600"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                    >
+                                        আপনি এই বইটির জন্য পূর্বে পেমেন্ট
+                                        করেছেন। সরাসরি ডাউনলোড করতে পারেন।
+                                    </motion.p>
+                                )}
+                            <motion.p
+                                className="text-sm text-[#6B4BA8]"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 1.1 }}
+                            >
+                                {isFreeBook
+                                    ? "বিনামূল্যে ডাউনলোড। কোনো অর্থপ্রদান প্রয়োজন নেই।"
+                                    : "পেমেন্টের জন্য bKash ব্যবহার করুন। সফল হলে ডাউনলোড স্বয়ংক্রিয়ভাবে শুরু হবে।"}
+                            </motion.p>
+                        </div>
                     </motion.div>
                 </div>
 
