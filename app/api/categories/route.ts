@@ -4,6 +4,7 @@ import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeCategory } from '@/lib/serializers';
 import type { Category, CategoryDocument } from '@/lib/types';
+import { revalidateHomePages } from '@/lib/revalidate';
 
 const COLOR_LIGHT_MIN = 5;
 const COLOR_LIGHT_MAX = 50;
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
     };
 
     await collection.insertOne(document);
-
+    revalidateHomePages();
     return NextResponse.json({ data: serializeCategory({ ...document, book_count: 0 }) }, { status: 201 });
   } catch (error) {
     console.error('Error creating category', error);

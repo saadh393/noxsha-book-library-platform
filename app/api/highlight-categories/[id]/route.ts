@@ -6,6 +6,7 @@ import type {
   BookDocument,
   HighlightCategoryDocument,
 } from '@/lib/types';
+import { revalidateHomePages } from '@/lib/revalidate';
 
 export async function PATCH(
   request: NextRequest,
@@ -52,6 +53,7 @@ export async function PATCH(
     }
 
     const bookCount = await booksCollection.countDocuments({ category: updated.name });
+    revalidateHomePages();
     return NextResponse.json({ data: serializeHighlightCategory({ ...updated, book_count: bookCount }) });
   } catch (error) {
     console.error('Error updating highlight category', error);
@@ -79,6 +81,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Highlight category not found' }, { status: 404 });
     }
 
+    revalidateHomePages();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting highlight category', error);

@@ -4,6 +4,7 @@ import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeSocialLink } from '@/lib/serializers';
 import type { SocialLink, SocialLinkDocument } from '@/lib/types';
+import { revalidateHomePages } from '@/lib/revalidate';
 
 export async function GET() {
   try {
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
     };
 
     await collection.insertOne(document);
+    revalidateHomePages();
     return NextResponse.json({ data: serializeSocialLink(document) }, { status: 201 });
   } catch (error) {
     console.error('Error creating social link', error);

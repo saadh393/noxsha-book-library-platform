@@ -3,6 +3,7 @@ import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeHighlightService } from '@/lib/serializers';
 import type { HighlightServiceDocument } from '@/lib/types';
+import { revalidateHomePages } from '@/lib/revalidate';
 
 export async function PATCH(
   request: NextRequest,
@@ -49,6 +50,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Highlight service not found' }, { status: 404 });
     }
 
+    revalidateHomePages();
     return NextResponse.json({ data: serializeHighlightService(updated) });
   } catch (error) {
     console.error('Error updating highlight service', error);
@@ -76,6 +78,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Highlight service not found' }, { status: 404 });
     }
 
+    revalidateHomePages();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting highlight service', error);

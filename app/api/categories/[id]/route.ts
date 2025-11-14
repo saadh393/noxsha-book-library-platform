@@ -3,6 +3,7 @@ import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeCategory } from '@/lib/serializers';
 import type { CategoryDocument, BookDocument } from '@/lib/types';
+import { revalidateHomePages, revalidateBookDetail } from '@/lib/revalidate';
 
 const COLOR_LIGHT_MIN = 5;
 const COLOR_LIGHT_MAX = 50;
@@ -100,6 +101,19 @@ export async function PATCH(
     const booksCollection = await getCollection<BookDocument>('books');
     const bookCount = await booksCollection.countDocuments({ category: updated.name });
 
+    revalidateHomePages();
+    if (nameChanged && updates.name) {
+      const affectedBooks = await booksCollection
+        .find({ category: updates.name })
+        .project<{ id: string }>({ id: 1 })
+        .toArray();
+      affectedBooks.forEach(({ id: bookId }) => {
+        if (bookId) {
+          revalidateBookDetail(bookId);
+        }
+      });
+    }
+
     return NextResponse.json({ data: serializeCategory({ ...updated, book_count: bookCount }) });
   } catch (error) {
     console.error('Error updating category', error);
@@ -138,6 +152,7 @@ export async function DELETE(
     }
 
     await collection.deleteOne({ _id: id });
+    revalidateHomePages();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting category', error);

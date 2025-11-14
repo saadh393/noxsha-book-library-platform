@@ -7,6 +7,7 @@ import type {
   HighlightService,
   HighlightServiceDocument,
 } from '@/lib/types';
+import { revalidateHomePages } from '@/lib/revalidate';
 
 export async function GET() {
   try {
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest) {
     };
 
     await collection.insertOne(document);
+    revalidateHomePages();
     return NextResponse.json({ data: serializeHighlightService(document) }, { status: 201 });
   } catch (error) {
     console.error('Error creating highlight service', error);

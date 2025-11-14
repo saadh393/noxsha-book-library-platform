@@ -3,6 +3,7 @@ import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeSiteSetting } from '@/lib/serializers';
 import type { SiteSetting, SiteSettingDocument } from '@/lib/types';
+import { revalidateHomePages } from '@/lib/revalidate';
 
 export async function GET(request: NextRequest) {
   const keysParam = request.nextUrl.searchParams.get('keys');
@@ -60,6 +61,7 @@ export async function PUT(request: NextRequest) {
     }));
 
     await collection.bulkWrite(updates);
+    revalidateHomePages();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating site settings', error);

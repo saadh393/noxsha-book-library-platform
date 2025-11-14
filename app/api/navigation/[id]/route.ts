@@ -3,6 +3,7 @@ import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeNavLink } from '@/lib/serializers';
 import type { NavLinkDocument } from '@/lib/types';
+import { revalidateHomePages } from '@/lib/revalidate';
 
 export async function PATCH(
   request: NextRequest,
@@ -46,6 +47,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Navigation link not found' }, { status: 404 });
     }
 
+    revalidateHomePages();
     return NextResponse.json({ data: serializeNavLink(updated) });
   } catch (error) {
     console.error('Error updating navigation link', error);
@@ -73,6 +75,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Navigation link not found' }, { status: 404 });
     }
 
+    revalidateHomePages();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting navigation link', error);

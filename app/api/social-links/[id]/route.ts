@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import type { SocialLinkDocument } from '@/lib/types';
+import { revalidateHomePages } from '@/lib/revalidate';
 
 export async function PATCH(
   request: NextRequest,
@@ -46,6 +47,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Social link not found' }, { status: 404 });
     }
 
+    revalidateHomePages();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating social link', error);
@@ -73,6 +75,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Social link not found' }, { status: 404 });
     }
 
+    revalidateHomePages();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting social link', error);

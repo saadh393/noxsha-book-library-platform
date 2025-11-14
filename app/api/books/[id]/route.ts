@@ -3,6 +3,7 @@ import { getCollection } from '@/lib/db';
 import { getSessionFromRequest } from '@/lib/auth-server';
 import { serializeBook } from '@/lib/serializers';
 import type { Book, BookDocument, CategoryDocument } from '@/lib/types';
+import { revalidateBookPages } from '@/lib/revalidate';
 
 export async function GET(
   _request: NextRequest,
@@ -113,6 +114,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Book not found' }, { status: 404 });
     }
 
+    revalidateBookPages(id);
     return NextResponse.json({ data: serializeBook(updated) });
   } catch (error) {
     console.error('Error updating book', error);
@@ -140,6 +142,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Book not found' }, { status: 404 });
     }
 
+    revalidateBookPages(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting book', error);

@@ -8,6 +8,7 @@ import type {
   HighlightCategory,
   HighlightCategoryDocument,
 } from '@/lib/types';
+import { revalidateHomePages } from '@/lib/revalidate';
 
 export async function GET() {
   try {
@@ -71,8 +72,8 @@ export async function POST(request: NextRequest) {
     };
 
     await categoriesCollection.insertOne(document);
-
     const bookCount = await booksCollection.countDocuments({ category: name });
+    revalidateHomePages();
     return NextResponse.json(
       { data: serializeHighlightCategory({ ...document, book_count: bookCount }) },
       { status: 201 },
