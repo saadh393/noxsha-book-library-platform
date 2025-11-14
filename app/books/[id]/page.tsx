@@ -7,6 +7,9 @@ import { serializeBook } from "@/lib/serializers";
 import type { Book, BookDocument } from "@/lib/types";
 import { getFooterContent, getHeaderContent } from "@/lib/page-data.server";
 
+export const revalidate = 3600;
+export const dynamicParams = true;
+
 const getBookData = cache(async (id: string) => {
     const collection = await getCollection<BookDocument>("books");
     const document = await collection.findOne({ _id: id });

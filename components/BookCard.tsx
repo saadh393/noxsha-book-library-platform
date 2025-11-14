@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Star } from 'lucide-react';
 import type { Book } from '@/lib/types';
 import { getBookImageUrl } from '@/lib/storage';
+import { formatCurrency, isFreePrice } from '@/lib/price';
 
 interface BookCardProps {
   book: Book;
@@ -11,6 +12,15 @@ interface BookCardProps {
 }
 
 export default function BookCard({ book, onClick }: BookCardProps) {
+  const isFree = isFreePrice(book.price);
+  const hasDiscount =
+    !isFree && typeof book.old_price === 'number' && book.old_price > book.price;
+  const priceLabel = isFree ? 'বিনামূল্যে' : formatCurrency(book.price);
+  const oldPriceLabel =
+    hasDiscount && typeof book.old_price === 'number'
+      ? formatCurrency(book.old_price)
+      : null;
+
   return (
     <motion.div
       className="bg-white rounded-lg shadow-md p-4 cursor-pointer group relative"
@@ -67,11 +77,17 @@ export default function BookCard({ book, onClick }: BookCardProps) {
       </div>
 
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-semibold text-[#2D1B4E]">বিনামূল্যে</span>
-          <span className="text-xs text-green-600 font-medium">ই-বুক</span>
+        <div className="flex items-baseline gap-2">
+          <span className="text-lg font-semibold text-[#2D1B4E]">
+            {priceLabel}
+          </span>
+          {oldPriceLabel && (
+            <span className="text-sm text-gray-400 line-through">{oldPriceLabel}</span>
+          )}
         </div>
-        
+        <span className="text-xs text-green-600 font-medium">
+          {isFree ? 'বিনামূল্যে' : 'মূল্য'}
+        </span>
       </div>
     </motion.div>
   );

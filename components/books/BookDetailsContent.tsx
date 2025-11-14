@@ -8,6 +8,7 @@ import DownloadModal from "../DownloadModal";
 import { fetchBookDetails } from "@/lib/api";
 import type { Book } from "@/lib/types";
 import { getBookImageUrl } from "@/lib/storage";
+import { formatCurrency, isFreePrice } from "@/lib/price";
 
 type TabKey = "description" | "details";
 
@@ -74,6 +75,28 @@ export default function BookDetails({
             </div>
         );
     }
+
+    const freeBook = isFreePrice(book.price);
+    const hasDiscount =
+        !freeBook &&
+        typeof book.old_price === "number" &&
+        book.old_price > book.price;
+    const priceLabel = freeBook
+        ? "বিনামূল্যে"
+        : formatCurrency(Number(book.price) || 0);
+    const oldPriceLabel =
+        hasDiscount && typeof book.old_price === "number"
+            ? formatCurrency(book.old_price)
+            : null;
+    const discountPercent =
+        hasDiscount && typeof book.old_price === "number"
+            ? Math.max(
+                  1,
+                  Math.round(
+                      ((book.old_price - book.price) / book.old_price) * 100
+                  )
+              )
+            : null;
 
     return (
         <motion.div
@@ -188,22 +211,39 @@ export default function BookDetails({
                         </motion.div>
 
                         <motion.div
-                            className="flex items-center gap-4 mb-8"
+                            className="flex flex-wrap items-center gap-4 mb-8"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.8 }}
                         >
                             <span className="text-4xl font-bold text-[#884be3]">
-                                বিনামূল্যে
+                                {priceLabel}
                             </span>
-                            <motion.span
-                                className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-semibold"
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ delay: 0.9, type: "spring" }}
-                            >
-                                ডিজিটাল ই-বুক
-                            </motion.span>
+                            {oldPriceLabel && (
+                                <span className="text-xl text-gray-400 line-through">
+                                    {oldPriceLabel}
+                                </span>
+                            )}
+                            {discountPercent && (
+                                <motion.span
+                                    className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-semibold"
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ delay: 0.9, type: "spring" }}
+                                >
+                                    {discountPercent}% ছাড়
+                                </motion.span>
+                            )}
+                            {!discountPercent && (
+                                <motion.span
+                                    className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-semibold"
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ delay: 0.9, type: "spring" }}
+                                >
+                                    ডিজিটাল ই-বুক
+                                </motion.span>
+                            )}
                         </motion.div>
 
                         <motion.div
@@ -281,7 +321,9 @@ export default function BookDetails({
                             animate={{ opacity: 1 }}
                             transition={{ delay: 1.1 }}
                         >
-                            বিনামূল্যে ডাউনলোড। কোনো অর্থপ্রদান প্রয়োজন নেই।
+                            {freeBook
+                                ? "বিনামূল্যে ডাউনলোড। কোনো অর্থপ্রদান প্রয়োজন নেই।"
+                                : "বইটি ডাউনলোড করার আগে মূল্য নিশ্চিত করুন। ডিসকাউন্ট দ্রুত পরিবর্তিত হতে পারে।"}
                         </motion.p>
                     </motion.div>
                 </div>

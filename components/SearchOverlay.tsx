@@ -7,6 +7,7 @@ import type { HomeCopyContent } from '@/lib/page-data';
 import type { Book } from '@/lib/types';
 import { searchBooks as searchBooksApi } from '@/lib/api';
 import { getBookImageUrl } from '@/lib/storage';
+import { formatCurrency, isFreePrice } from '@/lib/price';
 
 interface SearchOverlayProps {
   isOpen: boolean;
@@ -130,14 +131,28 @@ export default function SearchOverlay({
                     "{query}" অনুসন্ধানে {searchCountLabel}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {results.map((book) => (
-                      <motion.button
-                        key={book.id}
-                        type="button"
-                        className="text-left bg-white rounded-2xl p-4 shadow hover:shadow-lg transition-shadow flex gap-4"
-                        whileHover={{ y: -4 }}
-                        onClick={() => onBookClick(book.id)}
-                      >
+                    {results.map((book) => {
+                      const freeBook = isFreePrice(book.price);
+                      const hasDiscount =
+                        !freeBook &&
+                        typeof book.old_price === 'number' &&
+                        book.old_price > book.price;
+                      const priceLabel = freeBook
+                        ? 'বিনামূল্যে'
+                        : formatCurrency(book.price);
+                      const oldPriceLabel =
+                        hasDiscount && typeof book.old_price === 'number'
+                          ? formatCurrency(book.old_price)
+                          : null;
+
+                      return (
+                        <motion.button
+                          key={book.id}
+                          type="button"
+                          className="text-left bg-white rounded-2xl p-4 shadow hover:shadow-lg transition-shadow flex gap-4"
+                          whileHover={{ y: -4 }}
+                          onClick={() => onBookClick(book.id)}
+                        >
                         <div className="w-20 h-28 rounded-xl overflow-hidden bg-gray-100">
                           <img
                             src={getBookImageUrl(book, { width: 200, height: 300 })}
@@ -145,17 +160,26 @@ export default function SearchOverlay({
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-[#2D1B4E] line-clamp-2">
-                            {book.title}
-                          </h3>
-                          <p className="text-sm text-[#6B4BA8] mt-1">লেখক {book.author}</p>
-                          <p className="text-xs text-[#A38EC9] mt-2">
-                            {book.category}
-                          </p>
-                        </div>
-                      </motion.button>
-                    ))}
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-[#2D1B4E] line-clamp-2">
+                              {book.title}
+                            </h3>
+                            <p className="text-sm text-[#6B4BA8] mt-1">লেখক {book.author}</p>
+                            <div className="mt-3 flex items-baseline gap-2">
+                              <span className="text-sm font-semibold text-[#2D1B4E]">
+                                {priceLabel}
+                              </span>
+                              {oldPriceLabel && (
+                                <span className="text-xs text-gray-400 line-through">
+                                  {oldPriceLabel}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-[#A38EC9] mt-1">{book.category}</p>
+                          </div>
+                        </motion.button>
+                      );
+                    })}
                   </div>
                 </>
               ) : (
