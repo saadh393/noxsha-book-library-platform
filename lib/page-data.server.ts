@@ -8,7 +8,6 @@ import {
     serializeSocialLink,
 } from "./serializers";
 import type {
-    Book,
     BookDocument,
     CategoryDocument,
     HighlightServiceDocument,
@@ -347,27 +346,3 @@ export const getHomeSectionsContent = cache(
         };
     }
 );
-
-function escapeRegExp(value: string) {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-export async function searchBooksByQuery(query: string): Promise<Book[]> {
-    const trimmed = query.trim();
-    if (!trimmed) {
-        return [];
-    }
-
-    const collection = await getCollection<BookDocument>("books");
-    const regex = new RegExp(escapeRegExp(trimmed), "i");
-    const rows = await collection
-        .find(
-            {
-                $or: [{ title: { $regex: regex } }, { author: { $regex: regex } }],
-            },
-            { sort: { rating: -1 } }
-        )
-        .toArray();
-
-    return rows.map((row) => serializeBook(row));
-}

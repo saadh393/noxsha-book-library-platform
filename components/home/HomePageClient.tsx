@@ -6,6 +6,7 @@ import Hero from "@/components/Hero";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import HomeContent from "@/components/home/HomeContent";
+import SearchOverlay from "@/components/SearchOverlay";
 import type { HeroContent } from "@/lib/site-content";
 import type {
     CategorySectionContent,
@@ -15,7 +16,6 @@ import type {
     HomeSectionsContent,
     ServicesSectionContent,
 } from "@/lib/page-data";
-import type { Book } from "@/lib/types";
 
 interface HomePageClientProps {
     heroContent: HeroContent;
@@ -25,9 +25,6 @@ interface HomePageClientProps {
     copy: HomeCopyContent;
     categorySection: CategorySectionContent;
     servicesSection: ServicesSectionContent;
-    initialSearchQuery: string;
-    initialSearchResults: Book[];
-    hasServerSearchResults: boolean;
 }
 
 export default function HomePageClient({
@@ -38,58 +35,65 @@ export default function HomePageClient({
     copy,
     categorySection,
     servicesSection,
-    initialSearchQuery,
-    initialSearchResults,
-    hasServerSearchResults,
 }: HomePageClientProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const searchParamValue = searchParams.get("search");
-    const [searchQuery, setSearchQuery] = useState(
-        searchParamValue ?? initialSearchQuery ?? ""
+    const searchParamValue = searchParams.get("search") ?? "";
+    const [searchQuery, setSearchQuery] = useState(searchParamValue);
+    const [isSearchOpen, setIsSearchOpen] = useState(
+        Boolean(searchParamValue)
     );
 
     useEffect(() => {
-        setSearchQuery(searchParamValue ?? "");
+        setSearchQuery(searchParamValue);
+        setIsSearchOpen(Boolean(searchParamValue));
     }, [searchParamValue]);
 
-    const handleSearch = (query: string) => {
-        setSearchQuery(query);
+    const updateSearchParam = (query: string) => {
         const nextPath = query ? `/?search=${encodeURIComponent(query)}` : "/";
         router.replace(nextPath, { scroll: false });
     };
 
-    const handleBookClick = (bookId: string) => {
-        router.push(`/books/${bookId}`);
+    const handleSearchToggle = () => {
+        setIsSearchOpen(true);
     };
 
-    const handleAdminNavigate = () => {
-        router.push("/admin/login");
+    const handleSearchClose = () => {
+        setIsSearchOpen(false);
+        if (searchQuery) {
+            setSearchQuery("");
+            updateSearchParam("");
+        }
+    };
+
+    const handleSearchQueryChange = (query: string) => {
+        setSearchQuery(query);
+        updateSearchParam(query);
+    };
+
+    const handleBookNavigate = (bookId: string) => {
+        router.push(`/books/${bookId}`);
     };
 
     return (
         <>
             <Header
-                initialSearchQuery={searchQuery}
-                onSearch={handleSearch}
-                onAdminClick={handleAdminNavigate}
+                onAdminClick={() => router.push("/admin/login")}
                 logoText={headerContent.logoText}
                 searchPlaceholder={headerContent.searchPlaceholder}
                 adminTooltip={headerContent.adminTooltip}
                 navItems={headerContent.navItems}
+                searchMode="dialog"
+                onSearchToggle={handleSearchToggle}
             />
             <main>
                 <Hero {...heroContent} />
                 <HomeContent
-                    onBookClick={handleBookClick}
-                    searchQuery={searchQuery}
-                    initialSearchQuery={initialSearchQuery}
+                    onBookClick={handleBookNavigate}
                     sections={sections}
                     copy={copy}
                     categorySection={categorySection}
                     servicesSection={servicesSection}
-                    initialSearchResults={initialSearchResults}
-                    hasServerSearchResults={hasServerSearchResults}
                 />
             </main>
             <Footer
@@ -99,6 +103,17 @@ export default function HomePageClient({
                 contactLinks={footerContent.contactLinks}
                 bottomText={footerContent.bottomText}
                 socialLinks={footerContent.socialLinks}
+            />
+            <SearchOverlay
+                isOpen={isSearchOpen}
+                query={searchQuery}
+                copy={copy}
+                onQueryChange={handleSearchQueryChange}
+                onClose={handleSearchClose}
+                onBookClick={(bookId) => {
+                    setIsSearchOpen(false);
+                    handleBookNavigate(bookId);
+                }}
             />
         </>
     );

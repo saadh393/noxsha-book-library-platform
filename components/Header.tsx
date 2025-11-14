@@ -4,17 +4,21 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
-import { Search, X, Lock } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import type { NavLink } from '@/lib/types';
+
+type SearchMode = 'inline' | 'dialog';
 
 interface HeaderProps {
   initialSearchQuery?: string;
-  onSearch: (query: string) => void;
+  onSearch?: (query: string) => void;
   onAdminClick?: () => void;
   logoText?: string;
   searchPlaceholder?: string;
   adminTooltip?: string;
   navItems?: NavLink[];
+  searchMode?: SearchMode;
+  onSearchToggle?: () => void;
 }
 
 const MotionLink = motion(Link);
@@ -27,9 +31,12 @@ export default function Header({
   searchPlaceholder,
   adminTooltip,
   navItems,
+  searchMode = 'inline',
+  onSearchToggle,
 }: HeaderProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery ?? '');
+  const isDialogMode = searchMode === 'dialog';
 
   useEffect(() => {
     setSearchQuery(initialSearchQuery ?? '');
@@ -44,14 +51,27 @@ export default function Header({
     [navItems],
   );
 
-  const handleSearch = (event: React.FormEvent) => {
+  const handleSearchButtonClick = () => {
+    if (isDialogMode) {
+      onSearchToggle?.();
+    } else {
+      setIsSearchOpen((prev) => !prev);
+    }
+  };
+
+  const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    onSearch(searchQuery);
+    onSearch?.(searchQuery);
+  };
+
+  const handleChange = (value: string) => {
+    setSearchQuery(value);
+    onSearch?.(value);
   };
 
   const clearSearch = () => {
     setSearchQuery('');
-    onSearch('');
+    onSearch?.('');
   };
 
   return (
@@ -91,7 +111,7 @@ export default function Header({
 
           <div className="flex items-center gap-4">
             <motion.button
-              onClick={() => setIsSearchOpen((prev) => !prev)}
+              onClick={handleSearchButtonClick}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               className="p-2 hover:bg-[#884be3]/10 rounded-full transition-colors"
@@ -112,21 +132,18 @@ export default function Header({
           </div>
         </div>
 
-        {isSearchOpen && (
+        {!isDialogMode && isSearchOpen && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             className="mt-4"
           >
-            <form onSubmit={handleSearch} className="relative">
+            <form onSubmit={handleSubmit} className="relative">
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(event) => {
-                  setSearchQuery(event.target.value);
-                  onSearch(event.target.value);
-                }}
+                onChange={(event) => handleChange(event.target.value)}
                 placeholder={resolvedSearchPlaceholder}
                 className="w-full px-4 py-3 pr-20 rounded-lg border-2 border-[#884be3]/20 focus:border-[#884be3] outline-none transition-colors bg-white"
                 autoFocus
