@@ -121,9 +121,7 @@ export default function BookDetails({
             window.open(downloadUrl, "_blank", "noopener");
         } catch (error) {
             console.error("Failed to open download link", error);
-            setPaymentError(
-                "ডাউনলোড লিংক খুলতে পারিনি। পরে আবার চেষ্টা করুন।"
-            );
+            setPaymentError("ডাউনলোড লিংক খুলতে পারিনি। পরে আবার চেষ্টা করুন।");
         } finally {
             setIsDownloading(false);
         }
@@ -339,10 +337,6 @@ export default function BookDetails({
                                     maximumFractionDigits: 1,
                                 })}
                             </span>
-                            <span className="text-[#6B4BA8]">
-                                ({book.sales_count.toLocaleString("bn-BD")} টি
-                                ডাউনলোড)
-                            </span>
                         </motion.div>
 
                         <motion.div
@@ -405,9 +399,6 @@ export default function BookDetails({
                                     </span>
                                 </div>
                                 <div>
-                                    <span className="text-[#6B4BA8]">
-                                        ডাউনলোড:
-                                    </span>
                                     <span className="ml-2 font-semibold text-[#2D1B4E]">
                                         {book.sales_count.toLocaleString(
                                             "bn-BD"
