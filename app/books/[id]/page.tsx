@@ -7,7 +7,8 @@ import { serializeBook } from "@/lib/serializers";
 import type { Book, BookDocument } from "@/lib/types";
 import { getFooterContent, getHeaderContent } from "@/lib/page-data.server";
 
-export const revalidate = 3600;
+export const dynamic = "force-static";
+export const revalidate = false;
 export const dynamicParams = true;
 
 const getBookData = cache(async (id: string) => {
@@ -34,6 +35,17 @@ const getBookData = cache(async (id: string) => {
 type PageParams = {
     params: { id: string };
 };
+
+export async function generateStaticParams(): Promise<PageParams["params"][]> {
+    const collection = await getCollection<BookDocument>("books");
+    const documents = await collection
+        .find({}, { projection: { _id: 1 }, sort: { created_at: -1 } })
+        .toArray();
+
+    return documents.map(({ _id, id }) => ({
+        id: _id ?? id,
+    }));
+}
 
 export async function generateMetadata({
     params,
