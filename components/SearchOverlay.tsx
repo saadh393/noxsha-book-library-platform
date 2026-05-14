@@ -6,7 +6,7 @@ import { Search, X } from 'lucide-react';
 import type { HomeCopyContent } from '@/lib/page-data';
 import type { Book } from '@/lib/types';
 import { searchBooks as searchBooksApi } from '@/lib/api';
-import { getBookImageUrl } from '@/lib/storage';
+import { BOOK_IMAGE_VARIANTS, getBookImageUrl } from '@/lib/storage';
 import { formatCurrency, isFreePrice } from '@/lib/price';
 
 interface SearchOverlayProps {
@@ -155,7 +155,7 @@ export default function SearchOverlay({
                         >
                         <div className="w-20 h-28 rounded-xl overflow-hidden bg-gray-100">
                           <img
-                            src={getBookImageUrl(book, { width: 200, height: 300 })}
+                            src={getBookImageUrl(book, BOOK_IMAGE_VARIANTS.search)}
                             alt={book.title}
                             className="w-full h-full object-cover"
                           />

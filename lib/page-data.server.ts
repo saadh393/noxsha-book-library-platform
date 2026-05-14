@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { getCollection } from "./db";
+import { BRAND_IMAGE_VARIANTS, buildStorageImageUrl } from "./storage";
 import {
     serializeBook,
     serializeCategory,
@@ -27,6 +28,7 @@ import type {
 
 const DEFAULT_HEADER_CONTENT: HeaderContent = {
     logoText: "নোকশা",
+    logoImageUrl: null,
     searchPlaceholder: "শিরোনাম বা লেখক অনুসারে বই খুঁজুন...",
     adminTooltip: "অ্যাডমিন প্যানেল",
     navItems: [],
@@ -67,6 +69,7 @@ const DEFAULT_HOME_COPY: HomeCopyContent = {
 
 const HEADER_SETTING_KEYS = [
     "header_logo_text",
+    "header_logo_image_storage_name",
     "header_search_placeholder",
     "header_admin_tooltip",
 ] as const;
@@ -167,6 +170,10 @@ export const getHeaderContent = cache(async (): Promise<HeaderContent> => {
         logoText: normalizeSetting(
             settingsMap.header_logo_text,
             DEFAULT_HEADER_CONTENT.logoText
+        ),
+        logoImageUrl: buildStorageImageUrl(
+            settingsMap.header_logo_image_storage_name,
+            BRAND_IMAGE_VARIANTS.header
         ),
         searchPlaceholder: normalizeSetting(
             settingsMap.header_search_placeholder,

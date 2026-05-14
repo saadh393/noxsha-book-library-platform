@@ -4,6 +4,7 @@ import { cache } from "react";
 import BookDetailsPageClient from "@/components/books/BookDetailsPageClient";
 import { getCollection } from "@/lib/db";
 import { serializeBook } from "@/lib/serializers";
+import { BOOK_IMAGE_VARIANTS, getBookImageUrl } from "@/lib/storage";
 import type { Book, BookDocument } from "@/lib/types";
 import { getFooterContent, getHeaderContent } from "@/lib/page-data.server";
 
@@ -73,7 +74,7 @@ export async function generateMetadata({
         "ডিজিটাল লাইব্রেরি",
         "Noxsha",
     ];
-    const image = book.image_url ?? undefined;
+    const image = getBookImageUrl(book, BOOK_IMAGE_VARIANTS.og) ?? undefined;
 
     return {
         title,

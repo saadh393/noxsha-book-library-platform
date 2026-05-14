@@ -6,6 +6,7 @@ import { Menu, X, LogOut } from "lucide-react";
 import { adminLogout } from "@/lib/auth";
 import AdminSidebar, { AdminPage } from "./AdminSidebar";
 import AdminBooksManager from "./AdminBooksManager";
+import AdminBranding from "./AdminBranding";
 import AdminSettings from "./AdminSettings";
 import AdminReviews from "./AdminReviews";
 import AdminSocialLinks from "./AdminSocialLinks";
@@ -33,6 +34,8 @@ export default function AdminDashboardShell({
                 return <AdminBooksManager />;
             case "categories":
                 return <AdminCategories />;
+            case "branding":
+                return <AdminBranding />;
             case "hero":
                 return <AdminSettings />;
 

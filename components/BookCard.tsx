@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { Star } from 'lucide-react';
 import type { Book } from '@/lib/types';
-import { getBookImageUrl } from '@/lib/storage';
+import { BOOK_IMAGE_VARIANTS, getBookImageUrl } from '@/lib/storage';
 import { formatCurrency, isFreePrice } from '@/lib/price';
 
 interface BookCardProps {
@@ -43,7 +43,7 @@ export default function BookCard({ book, onClick }: BookCardProps) {
 
       <div className="relative mb-4 aspect-[3/4] bg-gray-100 rounded overflow-hidden">
         <motion.img
-          src={getBookImageUrl(book, { width: 300, height: 400 })}
+          src={getBookImageUrl(book, BOOK_IMAGE_VARIANTS.card)}
           alt={book.title}
           className="w-full h-full object-cover"
           whileHover={{ scale: 1.1 }}

@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
             rating: Number.isNaN(numericRating) ? 0 : numericRating,
             sales_count: 0,
             description: typeof description === "string" ? description : "",
-            image_url: image_url ?? null,
+            image_url: image_storage_name ? null : image_url ?? null,
             image_storage_name: image_storage_name ?? null,
             pdf_storage_name: pdf_storage_name ?? null,
             pdf_original_name: pdf_original_name ?? null,

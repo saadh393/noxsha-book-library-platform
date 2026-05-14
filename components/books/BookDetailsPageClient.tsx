@@ -37,6 +37,7 @@ export default function BookDetailsPageClient({
         onSearch={handleSearch}
         onAdminClick={() => router.push('/admin/login')}
         logoText={headerContent.logoText}
+        logoImageUrl={headerContent.logoImageUrl}
         searchPlaceholder={headerContent.searchPlaceholder}
         adminTooltip={headerContent.adminTooltip}
         navItems={headerContent.navItems}

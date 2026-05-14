@@ -9,6 +9,7 @@ import type {
   Category,
   Download,
 } from './types';
+import { buildStorageImageUrl, inferStoredAssetPath } from './storage';
 
 type PrimitiveRow = Record<string, any>;
 
@@ -25,6 +26,9 @@ function toIsoString(value: Date | string | null): string {
 }
 
 export function serializeBook(row: PrimitiveRow): Book {
+  const imageStorageName = row.image_storage_name ?? inferStoredAssetPath(row.image_url ?? null);
+  const imageUrl = buildStorageImageUrl(imageStorageName ?? row.image_url ?? null);
+
   return {
     id: row.id,
     title: row.title,
@@ -34,8 +38,8 @@ export function serializeBook(row: PrimitiveRow): Book {
     rating: Number(row.rating),
     sales_count: Number(row.sales_count),
     description: row.description ?? '',
-    image_url: row.image_url ?? null,
-    image_storage_name: row.image_storage_name ?? null,
+    image_url: imageUrl ?? row.image_url ?? null,
+    image_storage_name: imageStorageName ?? null,
     pdf_storage_name: row.pdf_storage_name ?? null,
     pdf_original_name: row.pdf_original_name ?? null,
     category: row.category,

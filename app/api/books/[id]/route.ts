@@ -84,7 +84,12 @@ export async function PATCH(
   if (payload.is_bestseller !== undefined) updates.is_bestseller = Boolean(payload.is_bestseller);
   if (payload.is_new !== undefined) updates.is_new = Boolean(payload.is_new);
   if (payload.image_url !== undefined) updates.image_url = payload.image_url ?? null;
-  if (payload.image_storage_name !== undefined) updates.image_storage_name = payload.image_storage_name ?? null;
+  if (payload.image_storage_name !== undefined) {
+    updates.image_storage_name = payload.image_storage_name ?? null;
+    if (payload.image_storage_name) {
+      updates.image_url = null;
+    }
+  }
   if (payload.pdf_storage_name !== undefined) updates.pdf_storage_name = payload.pdf_storage_name ?? null;
   if (payload.pdf_original_name !== undefined) updates.pdf_original_name = payload.pdf_original_name ?? null;
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCollection } from '@/lib/db';
-import { createBookDownloadUrl } from '@/lib/storage-provider.server';
+import { createBookReadUrl } from '@/lib/storage-provider.server';
 import type { BookDocument } from '@/lib/types';
 
 export async function GET(
@@ -20,17 +20,18 @@ export async function GET(
       return NextResponse.json({ error: 'Book not found' }, { status: 404 });
     }
 
-    const { pdf_storage_name } = book;
-
-    if (!pdf_storage_name) {
+    if (!book.pdf_storage_name) {
       return NextResponse.json({ error: 'PDF not available for this book' }, { status: 404 });
     }
 
-    const downloadUrl = await createBookDownloadUrl(pdf_storage_name);
-    return NextResponse.json({ downloadUrl });
+    const readUrl = await createBookReadUrl(book.pdf_storage_name);
+    return NextResponse.json({
+      readUrl,
+      fileName: book.pdf_original_name ?? null,
+    });
   } catch (error) {
-    console.error('Failed to generate PDF download link', error);
-    const message = error instanceof Error ? error.message : 'Failed to generate download link';
+    console.error('Failed to generate PDF read link', error);
+    const message = error instanceof Error ? error.message : 'Failed to generate read link';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

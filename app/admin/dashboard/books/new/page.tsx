@@ -42,9 +42,9 @@ export default function AdminBookCreatePage() {
     });
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imageStorageName, setImageStorageName] = useState<string | null>(null);
-    const [pdfFile, setPdfFile] = useState<File | null>(null);
     const [pdfStorageName, setPdfStorageName] = useState<string | null>(null);
     const [pdfOriginalName, setPdfOriginalName] = useState<string | null>(null);
+    const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [isUploadingPdf, setIsUploadingPdf] = useState(false);
 
@@ -121,12 +121,14 @@ export default function AdminBookCreatePage() {
             const data = response.data;
             setPdfStorageName(data.storage_name ?? null);
             setPdfOriginalName(selectedFile.name);
+            setPdfPreviewUrl(data.download_url ?? data.url ?? null);
             setStatusMessage("পিডিএফ আপলোড সম্পন্ন হয়েছে");
         } catch (error) {
             console.error("PDF upload failed", error);
             setStatusMessage("পিডিএফ আপলোড করতে ব্যর্থ হলাম");
             setPdfStorageName(null);
             setPdfOriginalName(null);
+            setPdfPreviewUrl(null);
         } finally {
             setIsUploadingPdf(false);
         }
@@ -152,7 +154,7 @@ export default function AdminBookCreatePage() {
         try {
             await createBook({
                 ...formData,
-                image_url: imagePreview,
+                image_url: imageStorageName ? null : imagePreview,
                 image_storage_name: imageStorageName,
                 pdf_storage_name: pdfStorageName,
                 pdf_original_name: pdfOriginalName,
@@ -380,7 +382,6 @@ export default function AdminBookCreatePage() {
                                     onChange={(event) => {
                                         const file = event.target.files?.[0];
                                         if (!file) return;
-                                        setPdfFile(file);
                                         handleUploadPdf(file);
                                     }}
                                 />
@@ -390,8 +391,20 @@ export default function AdminBookCreatePage() {
                                     <Loader2 className="animate-spin" size={14} /> আপলোড হচ্ছে...
                                 </p>
                             )}
-                            {pdfFile && !isUploadingPdf && (
-                                <p className="text-sm text-[#2D1B4E] mt-3">{pdfFile.name}</p>
+                            {pdfOriginalName && !isUploadingPdf && (
+                                <div className="mt-3 space-y-2">
+                                    <p className="text-sm text-[#2D1B4E]">{pdfOriginalName}</p>
+                                    {pdfPreviewUrl && (
+                                        <a
+                                            href={pdfPreviewUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="inline-flex text-sm text-[#6B4BA8] underline underline-offset-4 hover:text-[#884be3]"
+                                        >
+                                            আপলোড করা পিডিএফ খুলুন
+                                        </a>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </div>

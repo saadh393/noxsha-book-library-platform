@@ -8,6 +8,7 @@ import type {
 
 export interface HeaderContent {
     logoText: string;
+    logoImageUrl: string | null;
     searchPlaceholder: string;
     adminTooltip: string;
     navItems: NavLink[];

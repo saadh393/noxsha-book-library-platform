@@ -1,25 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     ArrowLeft,
+    BookOpen,
     Star,
-    Download,
     Share2,
     TrendingUp,
     Loader2,
 } from "lucide-react";
 import BookCard from "../BookCard";
-import DownloadModal from "../DownloadModal";
-import {
-    fetchBookDetails,
-    requestBookDownload,
-    startBkashPayment,
-} from "@/lib/api";
+import BookReaderModal from "./BookReaderModal";
+import { fetchBookDetails, requestBookReadUrl } from "@/lib/api";
 import type { Book } from "@/lib/types";
-import { getBookImageUrl } from "@/lib/storage";
+import { BOOK_IMAGE_VARIANTS, getBookImageUrl } from "@/lib/storage";
 import { formatCurrency, isFreePrice } from "@/lib/price";
 
 type TabKey = "description" | "details";
@@ -39,19 +34,14 @@ export default function BookDetails({
     initialBook = null,
     initialRelated = [],
 }: BookDetailsProps) {
-    const searchParams = useSearchParams();
     const [book, setBook] = useState<Book | null>(initialBook);
     const [relatedBooks, setRelatedBooks] = useState<Book[]>(initialRelated);
     const [selectedTab, setSelectedTab] = useState<TabKey>("description");
-    const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
-    const [isStartingPayment, setIsStartingPayment] = useState(false);
-    const [isDownloading, setIsDownloading] = useState(false);
-    const [paymentError, setPaymentError] = useState<string | null>(null);
-    const [handledQuerySignature, setHandledQuerySignature] = useState<
-        string | null
-    >(null);
-    const [hasUnlockedPaidBook, setHasUnlockedPaidBook] = useState(false);
-    const PAID_BOOK_STORAGE_KEY = "noxsha_paid_books";
+    const [isPreparingReader, setIsPreparingReader] = useState(false);
+    const [isReaderOpen, setIsReaderOpen] = useState(false);
+    const [readerUrl, setReaderUrl] = useState<string | null>(null);
+    const [readerError, setReaderError] = useState<string | null>(null);
+    const [actionError, setActionError] = useState<string | null>(null);
     const tabLabels: Record<TabKey, string> = {
         description: "বর্ণনা",
         details: "বিস্তারিত",
@@ -60,70 +50,34 @@ export default function BookDetails({
         () => (book ? isFreePrice(book.price) : false),
         [book]
     );
+    const hasPdf = Boolean(book?.pdf_storage_name);
 
-    const readPaidBookCache = useCallback(() => {
-        if (typeof window === "undefined") {
-            return {};
-        }
-        try {
-            const raw = window.localStorage.getItem(PAID_BOOK_STORAGE_KEY);
-            return raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
-        } catch (error) {
-            console.error("Failed to read paid book cache", error);
-            return {};
-        }
+    const handleReaderClose = useCallback(() => {
+        setIsReaderOpen(false);
+        setReaderUrl(null);
+        setReaderError(null);
     }, []);
 
-    const rememberPaidBook = useCallback(
-        (bookId: string, paymentID?: string | null) => {
-            if (typeof window === "undefined") return;
-            try {
-                const cache = readPaidBookCache();
-                cache[bookId] = {
-                    unlockedAt: new Date().toISOString(),
-                    paymentID: paymentID ?? null,
-                };
-                window.localStorage.setItem(
-                    PAID_BOOK_STORAGE_KEY,
-                    JSON.stringify(cache)
-                );
-                setHasUnlockedPaidBook(true);
-            } catch (error) {
-                console.error("Failed to persist paid book cache", error);
-            }
-        },
-        [readPaidBookCache]
-    );
-
-    const hasPaidAccess = useCallback(
-        (targetBookId: string) => {
-            const cache = readPaidBookCache();
-            return Boolean(cache[targetBookId]);
-        },
-        [readPaidBookCache]
-    );
-
-    const clearPaymentParams = useCallback(() => {
-        if (typeof window === "undefined") return;
-        const url = new URL(window.location.href);
-        url.searchParams.delete("paymentStatus");
-        url.searchParams.delete("paymentID");
-        url.searchParams.delete("reason");
-        window.history.replaceState({}, document.title, url.toString());
-    }, []);
-
-    const handleDirectDownload = useCallback(async () => {
+    const openBookReader = useCallback(async () => {
         if (!book) return;
-        setPaymentError(null);
-        setIsDownloading(true);
+        setActionError(null);
+        setReaderError(null);
+        setReaderUrl(null);
+        setIsReaderOpen(true);
+        setIsPreparingReader(true);
         try {
-            const { downloadUrl } = await requestBookDownload(book.id);
-            window.open(downloadUrl, "_blank", "noopener");
+            const { readUrl } = await requestBookReadUrl(book.id);
+            setReaderUrl(readUrl);
         } catch (error) {
-            console.error("Failed to open download link", error);
-            setPaymentError("ডাউনলোড লিংক খুলতে পারিনি। পরে আবার চেষ্টা করুন।");
+            console.error("Failed to open book reader", error);
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : "রিডার খুলতে পারিনি। পরে আবার চেষ্টা করুন।";
+            setReaderError(message);
+            setActionError(message);
         } finally {
-            setIsDownloading(false);
+            setIsPreparingReader(false);
         }
     }, [book]);
 
@@ -151,56 +105,14 @@ export default function BookDetails({
             setRelatedBooks([]);
         }
 
+        handleReaderClose();
         fetchBookDetailsData();
         window.scrollTo({ top: 0, behavior: "smooth" });
 
         return () => {
             isMounted = false;
         };
-    }, [bookId, initialBook?.id]);
-
-    useEffect(() => {
-        if (!book) return;
-        setHasUnlockedPaidBook(hasPaidAccess(book.id));
-    }, [book, hasPaidAccess]);
-
-    useEffect(() => {
-        if (!book) return;
-        const status = searchParams.get("paymentStatus");
-        const paymentId = searchParams.get("paymentID");
-
-        if (!status) {
-            setHandledQuerySignature(null);
-            return;
-        }
-
-        const signature = `${status}:${paymentId ?? ""}:${book.id}`;
-        if (handledQuerySignature === signature) {
-            return;
-        }
-
-        if (status === "success") {
-            setHandledQuerySignature(signature);
-            rememberPaidBook(book.id, paymentId);
-            handleDirectDownload();
-            clearPaymentParams();
-        } else if (status === "failed" || status === "cancelled") {
-            setHandledQuerySignature(signature);
-            setPaymentError(
-                status === "failed"
-                    ? "পেমেন্ট সম্পন্ন করা যায়নি। আবার চেষ্টা করুন।"
-                    : "আপনি পেমেন্ট প্রক্রিয়া বাতিল করেছেন।"
-            );
-            clearPaymentParams();
-        }
-    }, [
-        book,
-        searchParams,
-        handledQuerySignature,
-        rememberPaidBook,
-        handleDirectDownload,
-        clearPaymentParams,
-    ]);
+    }, [bookId, initialBook?.id, handleReaderClose]);
 
     if (!book) {
         return (
@@ -262,10 +174,10 @@ export default function BookDetails({
                             whileHover={{ scale: 1.02, rotate: 1 }}
                         >
                             <img
-                                src={getBookImageUrl(book, {
-                                    width: 400,
-                                    height: 560,
-                                })}
+                                src={getBookImageUrl(
+                                    book,
+                                    BOOK_IMAGE_VARIANTS.detail,
+                                )}
                                 alt={book.title}
                                 className="max-h-full max-w-full object-contain"
                             />
@@ -395,7 +307,9 @@ export default function BookDetails({
                                         ফরম্যাট:
                                     </span>
                                     <span className="ml-2 font-semibold text-green-600">
-                                        পিডিএফ / ইপাব
+                                        {hasPdf
+                                            ? "পিডিএফ উপলব্ধ"
+                                            : "পিডিএফ যোগ করা হয়নি"}
                                     </span>
                                 </div>
                                 <div>
@@ -424,58 +338,33 @@ export default function BookDetails({
                         >
                             <motion.button
                                 onClick={async () => {
-                                    if (isFreeBook) {
-                                        setIsDownloadModalOpen(true);
+                                    if (!hasPdf) {
+                                        setActionError(
+                                            "এই বইটির জন্য এখনও কোনো পিডিএফ ফাইল যোগ করা হয়নি।"
+                                        );
                                         return;
                                     }
-                                    if (hasUnlockedPaidBook) {
-                                        handleDirectDownload();
-                                        return;
-                                    }
-                                    if (!book) return;
-                                    setPaymentError(null);
-                                    setIsStartingPayment(true);
-                                    try {
-                                        const { redirectUrl } =
-                                            await startBkashPayment(book.id);
-                                        window.location.href = redirectUrl;
-                                    } catch (error) {
-                                        console.error(
-                                            "Failed to start bKash payment",
-                                            error
-                                        );
-                                        setPaymentError(
-                                            error instanceof Error
-                                                ? error.message
-                                                : "bKash পেমেন্ট শুরু করা যায়নি।"
-                                        );
-                                    } finally {
-                                        setIsStartingPayment(false);
-                                    }
+                                    void openBookReader();
                                 }}
-                                disabled={isStartingPayment || isDownloading}
+                                disabled={isPreparingReader || !hasPdf}
                                 className="flex-1 bg-gradient-to-r from-[#884be3] to-[#6B4BA8] text-white px-8 py-4 rounded-lg hover:shadow-xl transition-shadow font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
                                 whileHover={{ scale: 1.02, y: -2 }}
                                 whileTap={{ scale: 0.98 }}
                             >
-                                {isStartingPayment || isDownloading ? (
+                                {isPreparingReader ? (
                                     <>
                                         <Loader2
                                             className="animate-spin"
                                             size={20}
                                         />
-                                        {isFreeBook
-                                            ? "প্রসেসিং..."
-                                            : "bKash প্রসেস হচ্ছে"}
+                                        রিডার চালু হচ্ছে...
                                     </>
                                 ) : (
                                     <>
-                                        <Download size={20} />
-                                        {isFreeBook
-                                            ? "ই-বুক ডাউনলোড করুন"
-                                            : hasUnlockedPaidBook
-                                            ? "আবার ডাউনলোড করুন"
-                                            : "bKash দিয়ে পেমেন্ট করুন"}
+                                        <BookOpen size={20} />
+                                        {!hasPdf
+                                            ? "পিডিএফ শীঘ্রই আসছে"
+                                            : "বইটি পড়ুন"}
                                     </>
                                 )}
                             </motion.button>
@@ -490,36 +379,24 @@ export default function BookDetails({
                         </motion.div>
 
                         <div className="flex flex-col gap-2 text-center">
-                            {paymentError && (
+                            {actionError && (
                                 <motion.p
                                     className="text-sm text-red-600"
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                 >
-                                    {paymentError}
+                                    {actionError}
                                 </motion.p>
                             )}
-                            {!isFreeBook &&
-                                hasUnlockedPaidBook &&
-                                !paymentError && (
-                                    <motion.p
-                                        className="text-sm text-green-600"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                    >
-                                        আপনি এই বইটির জন্য পূর্বে পেমেন্ট
-                                        করেছেন। সরাসরি ডাউনলোড করতে পারেন।
-                                    </motion.p>
-                                )}
                             <motion.p
                                 className="text-sm text-[#6B4BA8]"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 1.1 }}
                             >
-                                {isFreeBook
-                                    ? "বিনামূল্যে ডাউনলোড। কোনো অর্থপ্রদান প্রয়োজন নেই।"
-                                    : "পেমেন্টের জন্য bKash ব্যবহার করুন। সফল হলে ডাউনলোড স্বয়ংক্রিয়ভাবে শুরু হবে।"}
+                                {hasPdf
+                                    ? "রিড বাটনে ক্লিক করলেই বইটি এই সাইটের ভেতরেই খুলবে।"
+                                    : "পিডিএফ আপলোড হলে এখান থেকেই বইটি পড়তে পারবেন।"}
                             </motion.p>
                         </div>
                     </motion.div>
@@ -595,12 +472,17 @@ export default function BookDetails({
                                             )} / ৫`,
                                         ],
                                         [
-                                            "ডাউনলোড",
+                                            "পাঠক",
                                             book.sales_count.toLocaleString(
                                                 "bn-BD"
                                             ),
                                         ],
-                                        ["ফরম্যাট", "পিডিএফ, ইপাব"],
+                                        [
+                                            "ফরম্যাট",
+                                            hasPdf
+                                                ? "পিডিএফ রিডার"
+                                                : "শীঘ্রই আসছে",
+                                        ],
                                         ["ভাষা", "ইংরেজি"],
                                     ].map(([label, value], i) => (
                                         <motion.div
@@ -653,11 +535,13 @@ export default function BookDetails({
                 )}
             </div>
 
-            <DownloadModal
-                isOpen={isDownloadModalOpen}
-                onClose={() => setIsDownloadModalOpen(false)}
-                bookTitle={book.title}
-                bookId={book.id}
+            <BookReaderModal
+                title={book.title}
+                isOpen={isReaderOpen}
+                isLoading={isPreparingReader}
+                readUrl={readerUrl}
+                errorMessage={readerError}
+                onClose={handleReaderClose}
             />
         </motion.div>
     );

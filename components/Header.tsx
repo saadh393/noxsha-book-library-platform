@@ -14,6 +14,7 @@ interface HeaderProps {
   onSearch?: (query: string) => void;
   onAdminClick?: () => void;
   logoText?: string;
+  logoImageUrl?: string | null;
   searchPlaceholder?: string;
   adminTooltip?: string;
   navItems?: NavLink[];
@@ -28,6 +29,7 @@ export default function Header({
   onSearch,
   onAdminClick,
   logoText,
+  logoImageUrl,
   searchPlaceholder,
   adminTooltip,
   navItems,
@@ -43,6 +45,7 @@ export default function Header({
   }, [initialSearchQuery]);
 
   const resolvedLogoText = logoText ?? 'নোকশা';
+  const resolvedLogoImageUrl = logoImageUrl?.trim().length ? logoImageUrl : '/logo.png';
   const resolvedSearchPlaceholder =
     searchPlaceholder ?? 'শিরোনাম বা লেখক অনুসারে বই খুঁজুন...';
   const resolvedAdminTooltip = adminTooltip ?? 'অ্যাডমিন প্যানেল';
@@ -84,12 +87,21 @@ export default function Header({
         <div className="flex items-center justify-between">
           <MotionLink
             href="/"
-            className="flex items-center gap-2"
+            className="flex items-center gap-3"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <span className="text-2xl font-serif text-[#884be3] font-bold">
-              <Image src="/logo.png" height={80} width={100} alt={resolvedLogoText} />
+            <span className="relative block h-12 w-16 overflow-hidden rounded-xl bg-white/70">
+              <Image
+                src={resolvedLogoImageUrl}
+                fill
+                sizes="64px"
+                alt={resolvedLogoText}
+                className="object-contain"
+              />
+            </span>
+            <span className="text-2xl font-serif font-bold text-[#884be3]">
+              {resolvedLogoText}
             </span>
           </MotionLink>
 

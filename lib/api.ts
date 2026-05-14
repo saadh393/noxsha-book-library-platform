@@ -252,6 +252,7 @@ export async function fetchActiveSocialLinks() {
 }
 
 interface UploadResponseData {
+    provider?: string;
     storage_name: string | null;
     url: string | null;
     type: string;
@@ -283,6 +284,16 @@ export async function requestBookDownload(bookId: string) {
         cache: "no-store",
     });
     return handleResponse<{ downloadUrl: string }>(response);
+}
+
+export async function requestBookReadUrl(bookId: string) {
+    const response = await fetch(`/api/books/${bookId}/read`, {
+        method: "GET",
+        cache: "no-store",
+    });
+    return handleResponse<{ readUrl: string; fileName: string | null }>(
+        response
+    );
 }
 
 export async function startBkashPayment(bookId: string) {

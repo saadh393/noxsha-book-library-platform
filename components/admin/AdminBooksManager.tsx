@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Loader2, RefreshCcw } from 'lucide-react';
 import { deleteBook, fetchBooks } from '@/lib/api';
 import type { Book } from '@/lib/types';
-import { getBookImageUrl } from '@/lib/storage';
+import { BOOK_IMAGE_VARIANTS, getBookImageUrl } from '@/lib/storage';
 
 interface StatusMessage {
   type: 'success' | 'error';
@@ -88,7 +88,7 @@ export default function AdminBooksManager() {
         <td className="px-4 py-3">
           <div className="flex items-center gap-3">
             <img
-              src={getBookImageUrl(book, { width: 60, height: 80 })}
+              src={getBookImageUrl(book, BOOK_IMAGE_VARIANTS.thumbnail)}
               alt={book.title}
               className="w-12 h-16 object-cover rounded shadow-sm"
             />
