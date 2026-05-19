@@ -264,7 +264,97 @@ interface UploadResponseData {
     uploaded_at: string | null;
 }
 
+interface ImageKitUploadAuthData {
+    token: string;
+    expire: number;
+    signature: string;
+    publicKey: string;
+    uploadEndpoint: string;
+    folder: string;
+    isPrivateFile: boolean;
+}
+
+interface ImageKitUploadResponse {
+    filePath?: string;
+    name?: string;
+    url?: string;
+    fileType?: string;
+    size?: number;
+    createdAt?: string;
+    [key: string]: unknown;
+}
+
+const storageProvider =
+    process.env.NEXT_PUBLIC_STORAGE_PROVIDER?.trim().toLowerCase() ?? "";
+
+const storageBaseUrl =
+    process.env.NEXT_PUBLIC_STORAGE_BASE_URL?.replace(/\/$/, "") ?? "";
+
+function buildStorageUrl(storageName: string | null) {
+    if (!storageName || !storageBaseUrl) {
+        return null;
+    }
+
+    if (storageName.startsWith("http://") || storageName.startsWith("https://")) {
+        return storageName;
+    }
+
+    return `${storageBaseUrl}${storageName.startsWith("/") ? storageName : `/${storageName}`}`;
+}
+
+async function uploadDirectlyToImageKit(file: File, type: "image" | "pdf") {
+    const authResponse = await fetch("/api/storage/upload-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ type }),
+    });
+    const { data: auth } = await handleResponse<{ data: ImageKitUploadAuthData }>(authResponse);
+
+    const formData = new FormData();
+    formData.append("file", file, file.name);
+    formData.append("fileName", file.name);
+    formData.append("publicKey", auth.publicKey);
+    formData.append("signature", auth.signature);
+    formData.append("expire", String(auth.expire));
+    formData.append("token", auth.token);
+    formData.append("folder", auth.folder);
+    formData.append("useUniqueFileName", "true");
+    formData.append("isPrivateFile", String(auth.isPrivateFile));
+    formData.append("responseFields", "isPrivateFile");
+
+    const uploadResponse = await fetch(auth.uploadEndpoint, {
+        method: "POST",
+        body: formData,
+    });
+    const payload = await handleResponse<ImageKitUploadResponse>(uploadResponse);
+    const storageName = payload.filePath ?? null;
+
+    if (!storageName) {
+        throw new Error("ImageKit did not return an uploaded file path.");
+    }
+
+    const completeResponse = await fetch("/api/storage/upload-complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+            type,
+            storage_name: storageName,
+            url: type === "image" ? payload.url ?? buildStorageUrl(storageName) : null,
+            size: typeof payload.size === "number" ? payload.size : null,
+            uploaded_at: typeof payload.createdAt === "string" ? payload.createdAt : null,
+        }),
+    });
+
+    return handleResponse<{ data: UploadResponseData }>(completeResponse);
+}
+
 export async function uploadToStorage(file: File, type: "image" | "pdf") {
+    if (storageProvider === "imagekit") {
+        return uploadDirectlyToImageKit(file, type);
+    }
+
     const formData = new FormData();
     formData.append("type", type);
     formData.append("file", file, file.name);

@@ -38,6 +38,7 @@ interface StorageProvider {
 
 const DEFAULT_STORAGE_PROVIDER = 'imagekit';
 const IMAGEKIT_SIGNED_FILE_TTL_SECONDS = 60 * 60 * 4;
+const IMAGEKIT_UPLOAD_AUTH_TTL_SECONDS = 60 * 10;
 const IMAGEKIT_IMAGE_FOLDER = '/books/images';
 const IMAGEKIT_PDF_FOLDER = '/books/pdfs';
 
@@ -296,12 +297,54 @@ function createStorageProvider() {
 
 const storageProvider = createStorageProvider();
 
+function getImageKitPublicKey() {
+  return process.env.IMAGEKIT_PUBLIC_KEY?.trim() || process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY?.trim() || '';
+}
+
+function getImageKitUploadOptions(type: StorageUploadType) {
+  return {
+    folder: type === 'image'
+      ? normalizeImageKitFolder(process.env.IMAGEKIT_IMAGE_FOLDER, IMAGEKIT_IMAGE_FOLDER)
+      : normalizeImageKitFolder(process.env.IMAGEKIT_PDF_FOLDER, IMAGEKIT_PDF_FOLDER),
+    isPrivateFile: type === 'pdf',
+  };
+}
+
 export function ensureStorageUploadAuthorized(request: NextRequest) {
   return Boolean(getSessionFromRequest(request));
 }
 
 export async function uploadFileToStorage(input: StorageProviderUploadInput) {
   return storageProvider.upload(input);
+}
+
+export function createImageKitDirectUploadConfig(type: StorageUploadType) {
+  if (normalizeStorageProviderName() !== 'imagekit') {
+    throw new Error('Direct browser uploads are only available for ImageKit storage.');
+  }
+
+  const publicKey = getImageKitPublicKey();
+
+  if (!publicKey) {
+    throw new Error('IMAGEKIT_PUBLIC_KEY environment variable is required for direct uploads.');
+  }
+
+  const client = new ImageKit({
+    privateKey: normalizeStorageServiceUrl(process.env.IMAGEKIT_PRIVATE_KEY, 'IMAGEKIT_PRIVATE_KEY'),
+  });
+  const auth = client.helper.getAuthenticationParameters(
+    undefined,
+    Math.floor(Date.now() / 1000) + IMAGEKIT_UPLOAD_AUTH_TTL_SECONDS,
+  );
+  const options = getImageKitUploadOptions(type);
+
+  return {
+    ...auth,
+    publicKey,
+    uploadEndpoint: 'https://upload.imagekit.io/api/v1/files/upload',
+    folder: options.folder,
+    isPrivateFile: options.isPrivateFile,
+  };
 }
 
 export async function createBookDownloadUrl(storageName: string) {
