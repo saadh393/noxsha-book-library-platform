@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { AlertCircle, CheckCircle, ImagePlus, Save, Trash2, Upload } from 'lucide-react';
 import { fetchSiteSettings, updateSiteSettings, uploadToStorage } from '@/lib/api';
+import { buildCopyrightText, DEFAULT_BRAND_NAME } from '@/lib/branding';
 import { BRAND_IMAGE_VARIANTS, buildStorageImageUrl } from '@/lib/storage';
 
 interface BrandingSettings {
@@ -94,6 +95,7 @@ export default function AdminBranding() {
       await updateSiteSettings({
         header_logo_text: settings.brandName.trim(),
         footer_company_name: settings.brandName.trim(),
+        footer_bottom_text: buildCopyrightText(settings.brandName.trim()),
         header_logo_image_storage_name: settings.logoStorageName.trim(),
       });
       setMessage({ type: 'success', text: 'লোগো ও নাম সফলভাবে সংরক্ষিত হয়েছে।' });
@@ -178,7 +180,7 @@ export default function AdminBranding() {
                 }))
               }
               className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 outline-none transition-colors focus:border-[#884be3]"
-              placeholder="নোকশা"
+              placeholder={DEFAULT_BRAND_NAME}
             />
           </div>
         </motion.div>

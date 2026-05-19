@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Hind_Siliguri } from "next/font/google";
+import { getHeaderContent } from "@/lib/page-data.server";
 import "./globals.css";
 
 const hindSiliguri = Hind_Siliguri({
@@ -8,10 +9,14 @@ const hindSiliguri = Hind_Siliguri({
     variable: "--font-hind-siliguri",
 });
 
-export const metadata: Metadata = {
-    title: "Noxsha",
-    description: "আপনার পছন্দের ডিজিটাল বই আবিষ্কার ও পরিচালনার প্ল্যাটফর্ম।",
-};
+export async function generateMetadata(): Promise<Metadata> {
+    const headerContent = await getHeaderContent();
+
+    return {
+        title: headerContent.logoText,
+        description: "আপনার পছন্দের ডিজিটাল বই আবিষ্কার ও পরিচালনার প্ল্যাটফর্ম।",
+    };
+}
 
 export default function RootLayout({
     children,

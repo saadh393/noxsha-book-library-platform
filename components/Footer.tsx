@@ -6,6 +6,7 @@ import * as LucideIcons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { SocialLink } from "@/lib/types";
 import Image from "next/image";
+import { buildCopyrightText, DEFAULT_BRAND_NAME } from "@/lib/branding";
 import type { FooterLinkItem } from "@/lib/page-data";
 
 function normalizeIconName(value: string) {
@@ -39,6 +40,7 @@ function resolveIcon(name: string): LucideIcon {
 
 interface FooterProps {
     companyName?: string;
+    logoImageUrl?: string | null;
     description?: string;
     quickLinks?: FooterLinkItem[];
     contactLinks?: FooterLinkItem[];
@@ -48,18 +50,21 @@ interface FooterProps {
 
 export default function Footer({
     companyName,
+    logoImageUrl,
     description,
     quickLinks,
     contactLinks,
     bottomText,
     socialLinks,
 }: FooterProps) {
-    const resolvedCompanyName = companyName ?? "নোকশা";
+    const resolvedCompanyName = companyName ?? DEFAULT_BRAND_NAME;
+    const resolvedLogoImageUrl = logoImageUrl?.trim().length
+        ? logoImageUrl
+        : "/logo.png";
     const resolvedDescription =
         description ??
         "বাছাইকৃত ই-বুকের বিনামূল্যের সংগ্রহশালা। জ্ঞান অন্বেষণে কোনো সীমানা নেই।";
-    const resolvedBottomText =
-        bottomText ?? "স্বত্ব © ২০২৫ নোকশা। সর্বস্বত্ব সংরক্ষিত।";
+    const resolvedBottomText = bottomText ?? buildCopyrightText(resolvedCompanyName);
     const resolvedQuickLinks = quickLinks ?? [];
     const resolvedContactLinks = contactLinks ?? [];
     const resolvedSocialLinks = (socialLinks ?? []).filter(
@@ -97,7 +102,7 @@ export default function Footer({
                     >
                         <h3 className="text-2xl font-serif text-[#884be3] mb-4 font-bold">
                             <Image
-                                src={"/logo.png"}
+                                src={resolvedLogoImageUrl}
                                 height={80}
                                 width={100}
                                 alt={resolvedCompanyName}

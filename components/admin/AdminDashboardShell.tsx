@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Menu, X, LogOut } from "lucide-react";
 import { adminLogout } from "@/lib/auth";
+import { DEFAULT_BRAND_NAME } from "@/lib/branding";
+import { fetchSiteSettings } from "@/lib/api";
 import AdminSidebar, { AdminPage } from "./AdminSidebar";
 import AdminBooksManager from "./AdminBooksManager";
 import AdminBranding from "./AdminBranding";
@@ -12,6 +14,7 @@ import AdminReviews from "./AdminReviews";
 import AdminSocialLinks from "./AdminSocialLinks";
 import AdminCategories from "./AdminCategories";
 import AdminDownloads from "./AdminDownloads";
+import AdminContactSettings from "./AdminContactSettings";
 
 interface AdminDashboardShellProps {
     onLogout: () => void;
@@ -22,6 +25,18 @@ export default function AdminDashboardShell({
 }: AdminDashboardShellProps) {
     const [currentPage, setCurrentPage] = useState<AdminPage>("books");
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [brandName, setBrandName] = useState(DEFAULT_BRAND_NAME);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const { data } = await fetchSiteSettings(["header_logo_text"]);
+                setBrandName(data.header_logo_text?.trim() || DEFAULT_BRAND_NAME);
+            } catch (error) {
+                console.error("Failed to load admin brand name", error);
+            }
+        })();
+    }, []);
 
     const handleLogout = async () => {
         await adminLogout();
@@ -44,16 +59,7 @@ export default function AdminDashboardShell({
             case "downloads":
                 return <AdminDownloads />;
             case "contact":
-                return (
-                    <div className="p-6">
-                        <h2 className="text-2xl font-bold text-[#2D1B4E]">
-                            যোগাযোগ সেটিংস
-                        </h2>
-                        <p className="text-[#6B4BA8] mt-4">
-                            যোগাযোগ তথ্য ব্যবস্থাপনা খুব শীঘ্রই আসছে...
-                        </p>
-                    </div>
-                );
+                return <AdminContactSettings />;
             default:
                 return null;
         }
@@ -65,6 +71,7 @@ export default function AdminDashboardShell({
                 currentPage={currentPage}
                 onPageChange={setCurrentPage}
                 isOpen={sidebarOpen}
+                brandName={brandName}
             />
 
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -81,7 +88,7 @@ export default function AdminDashboardShell({
                             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
                         <h1 className="text-2xl font-bold text-[#2D1B4E] font-serif">
-                            নোকশা অ্যাডমিন
+                            {brandName} অ্যাডমিন
                         </h1>
                     </div>
                     <motion.button

@@ -136,8 +136,11 @@ type PageProps = {
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const filter = resolveFilter(searchParams);
-  const title = await getSectionTitle(filter);
-  const pageTitle = `${title} | নোকশা ই-বুক`;
+  const [title, headerContent] = await Promise.all([
+    getSectionTitle(filter),
+    getHeaderContent(),
+  ]);
+  const pageTitle = `${title} | ${headerContent.logoText} ই-বুক`;
   const description = DEFAULT_SUBTITLES[filter];
 
   return {

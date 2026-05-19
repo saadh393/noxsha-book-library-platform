@@ -99,6 +99,7 @@ export default function HomePageClient({
             </main>
             <Footer
                 companyName={footerContent.companyName}
+                logoImageUrl={footerContent.logoImageUrl}
                 description={footerContent.description}
                 quickLinks={footerContent.quickLinks}
                 contactLinks={footerContent.contactLinks}

@@ -21,6 +21,7 @@ export interface FooterLinkItem {
 
 export interface FooterContent {
     companyName: string;
+    logoImageUrl: string | null;
     description: string;
     quickLinks: FooterLinkItem[];
     contactLinks: FooterLinkItem[];

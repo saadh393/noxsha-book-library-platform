@@ -1,4 +1,9 @@
 import { cache } from "react";
+import {
+    buildCopyrightText,
+    DEFAULT_BRAND_NAME,
+    replaceLegacyBrandName,
+} from "./branding";
 import { getCollection } from "./db";
 import { BRAND_IMAGE_VARIANTS, buildStorageImageUrl } from "./storage";
 import {
@@ -27,7 +32,7 @@ import type {
 } from "./page-data";
 
 const DEFAULT_HEADER_CONTENT: HeaderContent = {
-    logoText: "নোকশা",
+    logoText: DEFAULT_BRAND_NAME,
     logoImageUrl: null,
     searchPlaceholder: "শিরোনাম বা লেখক অনুসারে বই খুঁজুন...",
     adminTooltip: "অ্যাডমিন প্যানেল",
@@ -35,12 +40,13 @@ const DEFAULT_HEADER_CONTENT: HeaderContent = {
 };
 
 const DEFAULT_FOOTER_CONTENT: FooterContent = {
-    companyName: "নোকশা",
+    companyName: DEFAULT_BRAND_NAME,
+    logoImageUrl: null,
     description:
         "বাছাইকৃত ই-বুকের বিনামূল্যের সংগ্রহশালা। জ্ঞান অন্বেষণে কোনো সীমানা নেই।",
     quickLinks: [],
     contactLinks: [],
-    bottomText: "স্বত্ব © ২০২৫ নোকশা। সর্বস্বত্ব সংরক্ষিত।",
+    bottomText: buildCopyrightText(DEFAULT_BRAND_NAME),
     socialLinks: [],
 };
 
@@ -75,6 +81,7 @@ const HEADER_SETTING_KEYS = [
 ] as const;
 
 const FOOTER_SETTING_KEYS = [
+    "header_logo_image_storage_name",
     "footer_company_name",
     "footer_description",
     "footer_quick_links",
@@ -199,21 +206,30 @@ export const getFooterContent = cache(async (): Promise<FooterContent> => {
         .filter((record) => record.is_active)
         .map((record) => serializeSocialLink(record));
 
+    const companyName = normalizeSetting(
+        settingsMap.footer_company_name,
+        DEFAULT_FOOTER_CONTENT.companyName
+    );
+    const bottomText = settingsMap.footer_bottom_text?.trim()
+        ? replaceLegacyBrandName(settingsMap.footer_bottom_text.trim(), companyName)
+        : buildCopyrightText(companyName);
+
     return {
-        companyName: normalizeSetting(
-            settingsMap.footer_company_name,
-            DEFAULT_FOOTER_CONTENT.companyName
+        companyName,
+        logoImageUrl: buildStorageImageUrl(
+            settingsMap.header_logo_image_storage_name,
+            BRAND_IMAGE_VARIANTS.header
         ),
-        description: normalizeSetting(
-            settingsMap.footer_description,
-            DEFAULT_FOOTER_CONTENT.description
+        description: replaceLegacyBrandName(
+            normalizeSetting(
+                settingsMap.footer_description,
+                DEFAULT_FOOTER_CONTENT.description
+            ),
+            companyName
         ),
         quickLinks: parseFooterLinks(settingsMap.footer_quick_links),
         contactLinks: parseFooterLinks(settingsMap.footer_contact_links),
-        bottomText: normalizeSetting(
-            settingsMap.footer_bottom_text,
-            DEFAULT_FOOTER_CONTENT.bottomText
-        ),
+        bottomText,
         socialLinks,
     };
 });

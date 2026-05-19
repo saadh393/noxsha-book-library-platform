@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { Search, X } from 'lucide-react';
+import { DEFAULT_BRAND_NAME } from '@/lib/branding';
 import type { NavLink } from '@/lib/types';
 
 type SearchMode = 'inline' | 'dialog';
@@ -44,7 +45,7 @@ export default function Header({
     setSearchQuery(initialSearchQuery ?? '');
   }, [initialSearchQuery]);
 
-  const resolvedLogoText = logoText ?? 'নোকশা';
+  const resolvedLogoText = logoText ?? DEFAULT_BRAND_NAME;
   const resolvedLogoImageUrl = logoImageUrl?.trim().length ? logoImageUrl : '/logo.png';
   const resolvedSearchPlaceholder =
     searchPlaceholder ?? 'শিরোনাম বা লেখক অনুসারে বই খুঁজুন...';

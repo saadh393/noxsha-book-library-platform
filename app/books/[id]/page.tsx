@@ -52,27 +52,31 @@ export async function generateMetadata({
     params,
 }: PageParams): Promise<Metadata> {
     const { id } = await params;
-    const data = await getBookData(id);
+    const [data, headerContent] = await Promise.all([
+        getBookData(id),
+        getHeaderContent(),
+    ]);
+    const brandName = headerContent.logoText;
 
     if (!data) {
         return {
-            title: "বই পাওয়া যায়নি | নোকশা",
+            title: `বই পাওয়া যায়নি | ${brandName}`,
             description: "অনুরোধকৃত বইটি খুঁজে পাওয়া যায়নি।",
         };
     }
 
     const { book } = data;
-    const title = `${book.title} – ${book.author} | নোকশা`;
+    const title = `${book.title} – ${book.author} | ${brandName}`;
     const description = book.description?.length
         ? book.description.slice(0, 155)
-        : `${book.title} বইটি এখন নোকশা ডিজিটাল লাইব্রেরিতে উপলব্ধ।`;
+        : `${book.title} বইটি এখন ${brandName} ডিজিটাল লাইব্রেরিতে উপলব্ধ।`;
     const keywords = [
         book.title,
         book.author,
         book.category,
         "ই-বুক",
         "ডিজিটাল লাইব্রেরি",
-        "Noxsha",
+        brandName,
     ];
     const image = getBookImageUrl(book, BOOK_IMAGE_VARIANTS.og) ?? undefined;
 

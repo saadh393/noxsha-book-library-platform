@@ -1,4 +1,5 @@
 import { getCollection } from './db';
+import { DEFAULT_BRAND_NAME, replaceLegacyBrandName } from './branding';
 import type { SiteSettingDocument } from './types';
 
 export interface HeroHighlight {
@@ -23,12 +24,13 @@ const DEFAULT_HIGHLIGHTS: HeroHighlight[] = [
 const DEFAULT_HERO_CONTENT: HeroContent = {
   title: 'আপনার পরবর্তী\nবইটি খুঁজে নিন',
   subtitle:
-    'প্রতিটি পাতায় অপেক্ষা করছে নতুন অভিযাত্রা। নোকশা আপনাকে অনুপ্রেরণাময় ডিজিটাল গল্পের নির্বাচিত বাছাই এনে দেয়।',
+    'প্রতিটি পাতায় অপেক্ষা করছে নতুন অভিযাত্রা। অনুপ্রেরণাময় ডিজিটাল গল্পের নির্বাচিত বাছাই খুঁজে নিন।',
   buttonLabel: 'এখনই ঘুরে দেখুন',
   highlights: DEFAULT_HIGHLIGHTS,
 };
 
 const HERO_KEYS = [
+  'header_logo_text',
   'hero_title',
   'hero_subtitle',
   'hero_button_label',
@@ -72,10 +74,14 @@ export async function getHeroContent(): Promise<HeroContent> {
       .toArray();
 
     const map = new Map(records.map((item) => [item.key, item.value]));
+    const brandName = map.get('header_logo_text')?.trim() || DEFAULT_BRAND_NAME;
 
     return {
       title: map.get('hero_title')?.trim() || DEFAULT_HERO_CONTENT.title,
-      subtitle: map.get('hero_subtitle')?.trim() || DEFAULT_HERO_CONTENT.subtitle,
+      subtitle: replaceLegacyBrandName(
+        map.get('hero_subtitle')?.trim() || DEFAULT_HERO_CONTENT.subtitle,
+        brandName,
+      ),
       buttonLabel: map.get('hero_button_label')?.trim() || DEFAULT_HERO_CONTENT.buttonLabel,
       highlights: parseHighlights(map.get('hero_highlights')),
     };

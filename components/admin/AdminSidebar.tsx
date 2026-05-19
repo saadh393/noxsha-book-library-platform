@@ -25,6 +25,7 @@ interface AdminSidebarProps {
     currentPage: AdminPage;
     onPageChange: (page: AdminPage) => void;
     isOpen: boolean;
+    brandName: string;
 }
 
 const menuItems: { label: string; icon: React.ReactNode; page: AdminPage }[] = [
@@ -46,6 +47,7 @@ export default function AdminSidebar({
     currentPage,
     onPageChange,
     isOpen,
+    brandName,
 }: AdminSidebarProps) {
     return (
         <motion.aside
@@ -54,7 +56,7 @@ export default function AdminSidebar({
             transition={{ duration: 0.3 }}
         >
             <div className="p-6">
-                <h2 className="text-2xl font-bold font-serif">নোকশা</h2>
+                <h2 className="text-2xl font-bold font-serif">{brandName}</h2>
                 <p className="text-[#884be3] text-sm mt-1">অ্যাডমিন প্যানেল</p>
             </div>
 

@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { DEFAULT_BRAND_NAME } from '@/lib/branding';
 import { adminLogin } from '@/lib/auth';
+import { fetchSiteSettings } from '@/lib/api';
 
 interface AdminLoginFormProps {
   onLoginSuccess: () => void;
@@ -14,6 +16,18 @@ export default function AdminLoginForm({ onLoginSuccess }: AdminLoginFormProps) 
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [brandName, setBrandName] = useState(DEFAULT_BRAND_NAME);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const { data } = await fetchSiteSettings(['header_logo_text']);
+        setBrandName(data.header_logo_text?.trim() || DEFAULT_BRAND_NAME);
+      } catch (settingsError) {
+        console.error('Failed to load login brand name', settingsError);
+      }
+    })();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +62,7 @@ export default function AdminLoginForm({ onLoginSuccess }: AdminLoginFormProps) 
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <h1 className="text-3xl font-bold text-[#2D1B4E] font-serif">নোকশা</h1>
+          <h1 className="text-3xl font-bold text-[#2D1B4E] font-serif">{brandName}</h1>
           <p className="text-[#6B4BA8] mt-2">অ্যাডমিন ড্যাশবোর্ড</p>
         </motion.div>
 
