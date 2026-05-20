@@ -9,7 +9,7 @@ function sanitizeFileName(name: string | null | undefined) {
     return fallback;
   }
 
-  const normalized = name.replace(/[^\w.\- ]+/g, '_').trim();
+  const normalized = name.replace(/[^\w.\- ]+/g, '_').replace(/["\\]/g, '_').trim();
   return normalized || fallback;
 }
 

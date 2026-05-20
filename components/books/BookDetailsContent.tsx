@@ -58,6 +58,13 @@ export default function BookDetails({
         setReaderError(null);
     }, []);
 
+    const handleReaderLoadError = useCallback(() => {
+        const message = "রিডার খুলতে পারিনি। পরে আবার চেষ্টা করুন।";
+        setReaderError(message);
+        setActionError(message);
+        setIsPreparingReader(false);
+    }, []);
+
     const openBookReader = useCallback(() => {
         if (!book) return;
         setActionError(null);
@@ -529,6 +536,7 @@ export default function BookDetails({
                 isLoading={isPreparingReader}
                 readUrl={readerUrl}
                 errorMessage={readerError}
+                onLoadError={handleReaderLoadError}
                 onClose={handleReaderClose}
             />
         </motion.div>

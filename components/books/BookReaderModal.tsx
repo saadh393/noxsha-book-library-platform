@@ -10,6 +10,7 @@ interface BookReaderModalProps {
     isLoading: boolean;
     readUrl: string | null;
     errorMessage: string | null;
+    onLoadError?: () => void;
     onClose: () => void;
 }
 
@@ -19,6 +20,7 @@ export default function BookReaderModal({
     isLoading,
     readUrl,
     errorMessage,
+    onLoadError,
     onClose,
 }: BookReaderModalProps) {
     useEffect(() => {
@@ -109,6 +111,7 @@ export default function BookReaderModal({
                                         title={`${title} PDF reader`}
                                         src={`${readUrl}#toolbar=1&navpanes=0&view=FitH`}
                                         className="h-full w-full border-0"
+                                        onError={() => onLoadError?.()}
                                     />
                                 )}
                             </div>
