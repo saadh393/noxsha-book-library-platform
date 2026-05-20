@@ -18,6 +18,7 @@ import { BOOK_IMAGE_VARIANTS, getBookImageUrl } from "@/lib/storage";
 import { formatCurrency, isFreePrice } from "@/lib/price";
 
 type TabKey = "description" | "details";
+const READER_OPEN_ERROR_MESSAGE = "রিডার খুলতে পারিনি। পরে আবার চেষ্টা করুন।";
 
 interface BookDetailsProps {
     bookId: string;
@@ -34,7 +35,6 @@ export default function BookDetails({
     initialBook = null,
     initialRelated = [],
 }: BookDetailsProps) {
-    const READER_OPEN_ERROR_MESSAGE = "রিডার খুলতে পারিনি। পরে আবার চেষ্টা করুন।";
     const [book, setBook] = useState<Book | null>(initialBook);
     const [relatedBooks, setRelatedBooks] = useState<Book[]>(initialRelated);
     const [selectedTab, setSelectedTab] = useState<TabKey>("description");
