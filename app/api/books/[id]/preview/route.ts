@@ -11,7 +11,6 @@ function sanitizeFileName(name: string | null | undefined) {
 
   const normalized = name
     .replace(/[^\w.\- ]+/g, '_')
-    .replace(/\.\.+/g, '_')
     .replace(/^\.+/, '')
     .replace(/\s+/g, '_')
     .trim();
@@ -20,8 +19,7 @@ function sanitizeFileName(name: string | null | undefined) {
 
 function buildContentDisposition(fileName: string) {
   const escapedAscii = fileName
-    .replace(/[^a-zA-Z0-9._-]/g, '_')
-    .replace(/(["\\])/g, '\\$1');
+    .replace(/[^a-zA-Z0-9._-]/g, '_');
   const encodedUtf8 = encodeURIComponent(fileName)
     .replace(/'/g, '%27')
     .replace(/\(/g, '%28')
