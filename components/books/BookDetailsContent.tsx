@@ -18,6 +18,7 @@ import { BOOK_IMAGE_VARIANTS, getBookImageUrl } from "@/lib/storage";
 import { formatCurrency, isFreePrice } from "@/lib/price";
 
 type TabKey = "description" | "details";
+const READER_OPEN_ERROR_MESSAGE = "রিডার খুলতে পারিনি। পরে আবার চেষ্টা করুন।";
 
 interface BookDetailsProps {
     bookId: string;
@@ -59,9 +60,8 @@ export default function BookDetails({
     }, []);
 
     const handleReaderLoadError = useCallback(() => {
-        const message = "রিডার খুলতে পারিনি। পরে আবার চেষ্টা করুন।";
-        setReaderError(message);
-        setActionError(message);
+        setReaderError(READER_OPEN_ERROR_MESSAGE);
+        setActionError(READER_OPEN_ERROR_MESSAGE);
         setIsPreparingReader(false);
     }, []);
 
