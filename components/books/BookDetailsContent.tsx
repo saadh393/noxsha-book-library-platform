@@ -59,11 +59,15 @@ export default function BookDetails({
         setReaderError(null);
     }, []);
 
-    const handleReaderLoadError = useCallback(() => {
-        setReaderError(READER_OPEN_ERROR_MESSAGE);
-        setActionError(READER_OPEN_ERROR_MESSAGE);
-        setIsPreparingReader(false);
+    const showReaderError = useCallback((message: string) => {
+        setReaderError(message);
+        setActionError(message);
     }, []);
+
+    const handleReaderLoadError = useCallback(() => {
+        showReaderError(READER_OPEN_ERROR_MESSAGE);
+        setIsPreparingReader(false);
+    }, [showReaderError]);
 
     const openBookReader = useCallback(() => {
         if (!book) return;

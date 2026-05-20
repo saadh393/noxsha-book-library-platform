@@ -9,7 +9,11 @@ function sanitizeFileName(name: string | null | undefined) {
     return fallback;
   }
 
-  const normalized = name.replace(/[^\w.\- ]+/g, '_').trim();
+  const normalized = name
+    .replace(/[^\w.\- ]+/g, '_')
+    .replace(/\.\.+/g, '_')
+    .replace(/^\.+/, '')
+    .trim();
   return normalized || fallback;
 }
 
@@ -36,10 +40,17 @@ export async function GET(
 
     const readUrl = await createBookReadUrl(book.pdf_storage_name);
     const rangeHeader = request.headers.get('range');
-    const upstreamResponse = await fetch(readUrl, {
-      cache: 'no-store',
-      headers: rangeHeader ? { range: rangeHeader } : undefined,
-    });
+
+    let upstreamResponse: Response;
+    try {
+      upstreamResponse = await fetch(readUrl, {
+        cache: 'no-store',
+        headers: rangeHeader ? { range: rangeHeader } : undefined,
+      });
+    } catch (error) {
+      console.error('Failed to retrieve PDF from storage', error);
+      return NextResponse.json({ error: 'Failed to retrieve PDF from storage' }, { status: 502 });
+    }
 
     if (!upstreamResponse.ok || !upstreamResponse.body) {
       const upstreamMessage = await upstreamResponse.text().catch(() => '');
