@@ -13,8 +13,21 @@ function sanitizeFileName(name: string | null | undefined) {
     .replace(/[^\w.\- ]+/g, '_')
     .replace(/\.\.+/g, '_')
     .replace(/^\.+/, '')
+    .replace(/\s+/g, '_')
     .trim();
   return normalized || fallback;
+}
+
+function buildContentDisposition(fileName: string) {
+  const escapedAscii = fileName
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+    .replace(/(["\\])/g, '\\$1');
+  const encodedUtf8 = encodeURIComponent(fileName)
+    .replace(/'/g, '%27')
+    .replace(/\(/g, '%28')
+    .replace(/\)/g, '%29')
+    .replace(/\*/g, '%2A');
+  return `inline; filename="${escapedAscii}"; filename*=UTF-8''${encodedUtf8}`;
 }
 
 export async function GET(
@@ -63,7 +76,7 @@ export async function GET(
     const fileName = sanitizeFileName(book.pdf_original_name);
     const headers = new Headers();
     headers.set('Content-Type', upstreamResponse.headers.get('content-type') || 'application/pdf');
-    headers.set('Content-Disposition', `inline; filename="${fileName}"`);
+    headers.set('Content-Disposition', buildContentDisposition(fileName));
     headers.set('Cache-Control', 'private, no-store, max-age=0');
 
     const contentLength = upstreamResponse.headers.get('content-length');
