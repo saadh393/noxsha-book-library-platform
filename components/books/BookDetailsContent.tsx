@@ -12,12 +12,13 @@ import {
 } from "lucide-react";
 import BookCard from "../BookCard";
 import BookReaderModal from "./BookReaderModal";
-import { fetchBookDetails, requestBookReadUrl } from "@/lib/api";
+import { fetchBookDetails } from "@/lib/api";
 import type { Book } from "@/lib/types";
 import { BOOK_IMAGE_VARIANTS, getBookImageUrl } from "@/lib/storage";
 import { formatCurrency, isFreePrice } from "@/lib/price";
 
 type TabKey = "description" | "details";
+const READER_OPEN_ERROR_MESSAGE = "রিডার খুলতে পারিনি। পরে আবার চেষ্টা করুন।";
 
 interface BookDetailsProps {
     bookId: string;
@@ -58,27 +59,25 @@ export default function BookDetails({
         setReaderError(null);
     }, []);
 
-    const openBookReader = useCallback(async () => {
+    const showReaderError = useCallback((message: string) => {
+        setReaderError(message);
+        setActionError(message);
+    }, []);
+
+    const handleReaderLoadError = useCallback(() => {
+        showReaderError(READER_OPEN_ERROR_MESSAGE);
+        setIsPreparingReader(false);
+    }, [showReaderError]);
+
+    const openBookReader = useCallback(() => {
         if (!book) return;
         setActionError(null);
         setReaderError(null);
         setReaderUrl(null);
         setIsReaderOpen(true);
         setIsPreparingReader(true);
-        try {
-            const { readUrl } = await requestBookReadUrl(book.id);
-            setReaderUrl(readUrl);
-        } catch (error) {
-            console.error("Failed to open book reader", error);
-            const message =
-                error instanceof Error
-                    ? error.message
-                    : "রিডার খুলতে পারিনি। পরে আবার চেষ্টা করুন।";
-            setReaderError(message);
-            setActionError(message);
-        } finally {
-            setIsPreparingReader(false);
-        }
+        setReaderUrl(`/api/books/${book.id}/preview`);
+        setIsPreparingReader(false);
     }, [book]);
 
     useEffect(() => {
@@ -541,6 +540,7 @@ export default function BookDetails({
                 isLoading={isPreparingReader}
                 readUrl={readerUrl}
                 errorMessage={readerError}
+                onLoadError={handleReaderLoadError}
                 onClose={handleReaderClose}
             />
         </motion.div>
